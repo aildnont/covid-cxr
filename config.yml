@@ -2,6 +2,16 @@ PATHS:
   RAW_COVID_DATA: 'D:/Documents/Work/covid-cxr/data/covid-chestxray-dataset-master/'
   RAW_OTHER_DATA: 'D:/Documents/Work/covid-cxr/data/other/'
   PROCESSED_DATA: 'data/processed/'
+  TRAIN_IMGS: 'data/processed/train/'
+  VAL_IMGS: 'data/processed/val/'
+  TEST_IMGS: 'data/processed/test/'
+  TRAIN_SET: 'data/processed/train_set.csv'
+  VAL_SET: 'data/processed/val_set.csv'
+  TEST_SET: 'data/processed/test_set.csv'
+  IMAGES: 'documents/generated_images/'
+  LOGS: 'results\\logs\\'
+  MODEL_WEIGHTS: 'results/models/model.h5'
+  MODEL_TO_LOAD: 'results/models/model.h5'
 
 DATA:
   IMG_DIM: [224, 224]
@@ -9,11 +19,17 @@ DATA:
   TEST_SPLIT: 0.1
 
 NN:
-  RESNET:
+  MOBILENET:
     NODES:
-      DENSE0: 128
+      DENSE0: 64
     LR: 0.001
     DROPOUT: 0.3
 
 TRAIN:
-  EPOCHS: 100
+  EXPERIMENT_TYPE: 'single_train'
+  BATCH_SIZE: 16
+  EPOCHS: 10
+  THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
+  PATIENCE: 15
+  IMB_STRATEGY: 'class_weight'  # One of {'class_weight', 'random_oversample'}
+  POS_WEIGHT: 0.5

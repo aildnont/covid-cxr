@@ -83,9 +83,9 @@ def preprocess():
     file_df_test['filename'] = file_df_test['filename'].str.split('\\').str[-1]
 
     # Save training, validation and test sets
-    file_df_train.to_csv(processed_path + 'train_set.csv')
-    file_df_val.to_csv(processed_path + 'val_set.csv')
-    file_df_test.to_csv(processed_path + 'test_set.csv')
+    file_df_train.to_csv(cfg['PATHS']['TRAIN_SET'])
+    file_df_val.to_csv(cfg['PATHS']['VAL_SET'])
+    file_df_test.to_csv(cfg['PATHS']['TEST_SET'])
     return
 
 if __name__ == '__main__':

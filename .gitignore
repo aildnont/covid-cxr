@@ -17,7 +17,6 @@ results/predictions/*
 !data/transformers/.gitkeep
 !documents/.gitkeep
 !documents/generated_images/.gitkeep
-!results/logs/.gitkeep
 !results/logs/training/.gitkeep
 !results/logs/hparam_search/.gitkeep
 !results/models/.gitkeep

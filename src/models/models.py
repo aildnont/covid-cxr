@@ -3,12 +3,13 @@ from tensorflow.keras.layers import Dense, Dropout, Input, Flatten, LeakyReLU
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.optimizers import Adam, SGD
 from tensorflow.keras.initializers import Constant
-from tensorflow.keras.applications import VGG16
+from tensorflow.keras.applications import MobileNet
 
-def vgg16(model_config, metrics, output_bias):
+def mobilenet_model(model_config, input_shape, metrics, output_bias=None):
     '''
     Define a neural network model with a pre-trained VGG16 base
-    :param config: A dictionary of parameters associated with the model architecture
+    :param model_config: A dictionary of parameters associated with the model architecture
+    :param input_shape: The shape of the model input
     :param metrics: Metrics to track model's performance
     :param output_bias: initial bias applied to output layer
     :return: a Keras model object with the architecture defined in this method
@@ -24,7 +25,7 @@ def vgg16(model_config, metrics, output_bias):
 
     # Define model architecture
     model = Sequential(name='covid-19-cxr-classifier')
-    model.add(VGG16(include_top=False))                 # VGG16 architecture pre-trained on ImageNet
+    model.add(MobileNet(include_top=False, input_shape=input_shape))    # MobileNet architecture pre-trained on ImageNet
     model.add(Flatten(name='flatten'))
     model.add(Dense(nodes_dense0, name='dense0'))
     model.add(LeakyReLU())
