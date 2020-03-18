@@ -1,0 +1,4 @@
+PATHS:
+  RAW_COVID_DATA: 'D:\Documents\Work\covid-cxr\data\covid-chestxray-dataset-master\'
+  RAW_OTHER_DATA: 'D:\Documents\Work\covid-cxr\data\other\'
+  PROCESSED_DATA: 'D:\Documents\Work\covid-cxr\data\processed\'
