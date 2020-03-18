@@ -11,6 +11,10 @@ from sklearn.model_selection import train_test_split
 
 
 def preprocess():
+    '''
+    Preprocess and partition image data. Assemble all image file paths and partition into training, validation and
+    test sets. Copy raw images to folders for training, validation and test sets.
+    '''
 
     cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))  # Load config data
     covid_data_path = cfg['PATHS']['RAW_COVID_DATA']

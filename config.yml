@@ -7,3 +7,13 @@ DATA:
   IMG_DIM: [224, 224]
   VAL_SPLIT: 0.05
   TEST_SPLIT: 0.1
+
+NN:
+  RESNET:
+    NODES:
+      DENSE0: 128
+    LR: 0.001
+    DROPOUT: 0.3
+
+TRAIN:
+  EPOCHS: 100
