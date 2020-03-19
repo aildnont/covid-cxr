@@ -33,7 +33,7 @@ NN:
     NODES:
       DENSE0: 128
       DENSE1: 32
-    LR: 0.0005
+    LR: 0.0001
     DROPOUT: 0.25
     L2_LAMBDA: 0.0001
 
