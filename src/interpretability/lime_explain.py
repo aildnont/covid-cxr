@@ -7,7 +7,7 @@ import dill
 import numpy as np
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-#from src.visualization.visualize import visualize_explanation
+from src.visualization.visualize import visualize_explanation
 
 def predict_instance(x, model):
     '''
@@ -43,7 +43,8 @@ def predict_and_explain(x, model, exp, num_features, num_samples):
 
     # Generate explanation for the example
     explanation = exp.explain_instance(x, predict, num_features=num_features, num_samples=num_samples)
-    return explanation
+    probs = predict_instance(np.expand_dims(x, axis=0), model)
+    return explanation, probs
 
 
 def setup_lime():
@@ -97,11 +98,12 @@ def explain_xray(lime_dict, idx):
     x = np.squeeze(x, axis=0)
 
     start_time = datetime.datetime.now()
-    explanation = predict_and_explain(x, lime_dict['MODEL'], lime_dict['EXPLAINER'],
+    explanation, probs = predict_and_explain(x, lime_dict['MODEL'], lime_dict['EXPLAINER'],
                                       lime_dict['NUM_FEATURES'], lime_dict['NUM_SAMPLES'])
     print("Explanation time = " + str((datetime.datetime.now() - start_time).total_seconds()) + " seconds")
-    #fig = visualize_explanation(explanation, client_id, lime_dict['Y_TEST'].loc[client_id, 'GroundTruth'],
-    #                      file_path=lime_dict['IMG_PATH'])
+    img_filename = lime_dict['TEST_SET']['filename'][i]
+    label = lime_dict['TEST_SET']['label'][i]
+    fig = visualize_explanation(explanation, img_filename, label, probs[0], file_path=lime_dict['IMG_PATH'])
     return
 
 

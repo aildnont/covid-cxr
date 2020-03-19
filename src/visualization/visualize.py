@@ -1,9 +1,10 @@
-from sklearn.metrics import confusion_matrix, roc_curve
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import datetime
 import io
+from sklearn.metrics import confusion_matrix, roc_curve
+from skimage.segmentation import mark_boundaries
 
 # Set some matplotlib parameters
 mpl.rcParams['figure.figsize'] = (12, 10)
@@ -108,3 +109,32 @@ def plot_confusion_matrix(labels, predictions, p=0.5, dir_path=None):
     print('True (-)ves: ', cm[0][0], '\nFalse (+)ves: ', cm[0][1], '\nFalse (-)ves: ', cm[1][0], '\nTrue (+)ves: ',
           cm[1][1])
     return plot_to_tensor()
+
+
+def visualize_explanation(explanation, img_filename, label, probs, file_path=None):
+    '''
+    Visualize an explanation for the prediction of a single X-ray image.
+    :param explanation: ImageExplanation object
+    :param img_filename: Filename of the image explained
+    :param label: Ground truth class of the example
+    :param probs: Prediction probabilities
+    :param file_path: Path to save the generated image
+    '''
+
+    # Plot the image and its explanation
+    temp, mask = explanation.get_image_and_mask(explanation.top_labels[0], positive_only=False, num_features=10,
+                                                hide_rest=False)
+    ax = plt.subplot()
+    ax.imshow(mark_boundaries(temp / 2 + 0.5, mask))
+
+    # Display some information about the example
+    ax.text(0.02, 0.98, "Prediction probabilities: ['0': {:.2f}, '1': {:.2f}]".format(probs[0], probs[1]))
+    ax.text(0.02, 0.96, "Ground Truth: " + str(label))
+    ax.text(0.02, 0.94, "Filename: " + img_filename)
+    plt.tight_layout()
+
+    # Save the image
+    if file_path is not None:
+        plt.savefig(file_path + img_filename + '_exp_' +
+                    datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png')
+    return
