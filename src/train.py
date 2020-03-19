@@ -12,6 +12,7 @@ from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ReduceLROnPla
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from src.models.models import *
 from src.visualization.visualize import *
+from src.custom.metrics import F1Score
 
 def get_class_weights(num_pos, num_neg, pos_weight=0.5):
     '''
@@ -54,7 +55,7 @@ def train_model(cfg, data, model, callbacks, verbose=1):
     :return: Trained model and associated performance metrics on the test set
     '''
 
-    # Apply class imbalance strategy
+    # Apply class imbalance strategy. We have many more X-rays negative for COVID-19 than positive.
     num_neg, num_pos = np.bincount(data['TRAIN']['label'].astype(int))
     class_weight = None
     if cfg['TRAIN']['IMB_STRATEGY'] == 'class_weight':
@@ -117,7 +118,8 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
     # Define metrics.
     thresholds = cfg['TRAIN']['THRESHOLDS']     # Load classification thresholds
     metrics = ['accuracy', BinaryAccuracy(name='accuracy'), Precision(name='precision', thresholds=thresholds),
-               Recall(name='recall', thresholds=thresholds), AUC(name='auc')]
+               Recall(name='recall', thresholds=thresholds), AUC(name='auc'),
+               F1Score(name='f1score', thresholds=thresholds)]
 
     # Set callbacks.
     early_stopping = EarlyStopping(monitor='val_loss', verbose=1, patience=cfg['TRAIN']['PATIENCE'], mode='min', restore_best_weights=True)
