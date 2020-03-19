@@ -4,13 +4,13 @@ import os
 import tensorflow as tf
 import numpy as np
 from imblearn.over_sampling import RandomOverSampler
-from datetime import datetime
 from math import ceil
+import datetime
 from tensorflow.keras.metrics import BinaryAccuracy, Precision, Recall, AUC
 from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ReduceLROnPlateau
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from src.models.models import mobilenet_model
+from src.models.models import *
 from src.visualization.visualize import *
 
 def get_class_weights(num_pos, num_neg, pos_weight=0.5):
@@ -63,9 +63,9 @@ def train_model(cfg, data, model, callbacks, verbose=1):
         data['TRAIN'] = random_minority_oversample(data['TRAIN'])
 
     # Create ImageDataGenerators
-    train_img_gen = ImageDataGenerator(rescale=1. / 255)
-    val_img_gen = ImageDataGenerator(rescale=1. / 255)
-    test_img_gen = ImageDataGenerator(rescale=1. / 255)
+    train_img_gen = ImageDataGenerator(rescale=1.0/255.0)
+    val_img_gen = ImageDataGenerator(rescale=1.0/255.0)
+    test_img_gen = ImageDataGenerator(rescale=1.0/255.0)
 
     # Create DataFrameIterators
     img_shape = tuple(cfg['DATA']['IMG_DIM'])
@@ -77,8 +77,8 @@ def train_model(cfg, data, model, callbacks, verbose=1):
         x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='raw')
 
     # Train the model.
-    steps_per_epoch = ceil(data['TRAIN'].shape[0] / cfg['TRAIN']['BATCH_SIZE'])
-    val_steps = ceil(data['VAL'].shape[0] / cfg['TRAIN']['BATCH_SIZE'])
+    steps_per_epoch = ceil(train_generator.n / train_generator.batch_size)
+    val_steps = ceil(val_generator.n / val_generator.batch_size)
     history = model.fit_generator(train_generator, steps_per_epoch=steps_per_epoch, epochs=cfg['TRAIN']['EPOCHS'],
                                   validation_data=val_generator, validation_steps=val_steps, callbacks=callbacks,
                                   verbose=verbose, class_weight=class_weight)
@@ -105,9 +105,7 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
 
     # Load project config data
     cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))
-
-    plot_path = cfg['PATHS']['IMAGES']  # Path for images of matplotlib figures
-    cur_date = datetime.now().strftime('%Y%m%d-%H%M%S')
+    cur_date = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
 
     # Load dataset file paths and labels
     data = {}
@@ -131,9 +129,10 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
 
     # Define the model.
     num_neg, num_pos = np.bincount(data['TRAIN']['label'].astype(int))
+    print("Class 0:", num_neg, "XRs. Class 1:", num_pos, "XRs.")
     output_bias = np.log([num_pos / num_neg])
     input_shape = cfg['DATA']['IMG_DIM'] + [3]
-    model = mobilenet_model(cfg['NN']['MOBILENET'], input_shape, metrics, output_bias=output_bias)   # Build model graph
+    model = dcnn1(cfg['NN']['DCNN1'], input_shape, metrics, output_bias=output_bias)   # Build model graph
 
     # Conduct desired train experiment
     if experiment == 'single_train':
@@ -141,8 +140,8 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
 
     # Visualization of test results
     test_predictions = model.predict_generator(test_generator, verbose=0)
-    roc_img = plot_roc("Test set", data['Y_test'], test_predictions, dir_path=None)
-    cm_img = plot_confusion_matrix(data['Y_test'], test_predictions, dir_path=None)
+    roc_img = plot_roc("Test set", data['TEST']['label'], test_predictions, dir_path=None)
+    cm_img = plot_confusion_matrix(data['TEST']['label'], test_predictions, dir_path=None)
 
     # Log test set results and plots in TensorBoard
     if write_logs:

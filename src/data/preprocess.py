@@ -37,10 +37,10 @@ def preprocess():
     # Assemble filenames comprising Kaggle dataset that is organized into "normal" and "pneumonia" XRs
     normal_xr_filenames = [(other_data_path + 'normal\\' + f) for f in os.listdir(other_data_path + 'normal\\') if
                   os.path.isfile(os.path.join(other_data_path + 'normal\\', f))]
-    normal_xr_filenames = normal_xr_filenames[0: ceil(0.5 * len(normal_xr_filenames))]
+    normal_xr_filenames = normal_xr_filenames[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(normal_xr_filenames))]
     pneum_xr_filenames = [(other_data_path + 'pneumonia\\' + f) for f in os.listdir(other_data_path + 'pneumonia\\') if
                        os.path.isfile(os.path.join(other_data_path + 'pneumonia\\', f))]
-    pneum_xr_filenames = pneum_xr_filenames[0: ceil(0.5 * len(pneum_xr_filenames))]
+    pneum_xr_filenames = pneum_xr_filenames[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(pneum_xr_filenames))]
     other_file_df = pd.DataFrame({'filename': normal_xr_filenames + pneum_xr_filenames, 'label': 0})
 
     # Combine both datasets

@@ -1,5 +1,5 @@
 PATHS:
-  RAW_COVID_DATA: 'D:/Documents/Work/covid-cxr/data/covid-chestxray-dataset-master/'
+  RAW_COVID_DATA: 'D:/Documents/Work/covid-cxr/data/covid-chestxray-dataset/'
   RAW_OTHER_DATA: 'D:/Documents/Work/covid-cxr/data/other/'
   PROCESSED_DATA: 'data/processed/'
   TRAIN_IMGS: 'data/processed/train/'
@@ -17,14 +17,23 @@ DATA:
   IMG_DIM: [224, 224]
   VAL_SPLIT: 0.05
   TEST_SPLIT: 0.1
-  KAGGLE_DATA_FRAC: 0.5
+  KAGGLE_DATA_FRAC: 0.25
 
 NN:
   MOBILENET:
     NODES:
-      DENSE0: 64
+      DENSE0: 128
+    LR: 0.01
+    DROPOUT: 0.25
+  DCNN1:
+    KERNEL_SIZE: (3,3)
+    STRIDES: (1,1)
+    INIT_FILTERS: 8
+    FILTER_EXP: 4
+    NODES:
+      DENSE0: 128
     LR: 0.001
-    DROPOUT: 0.3
+    DROPOUT: 0.25
 
 TRAIN:
   EXPERIMENT_TYPE: 'single_train'
@@ -33,4 +42,4 @@ TRAIN:
   THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
   PATIENCE: 15
   IMB_STRATEGY: 'class_weight'  # One of {'class_weight', 'random_oversample'}
-  POS_WEIGHT: 0.8
+  POS_WEIGHT: 0.5
