@@ -8,14 +8,15 @@ results/logs/training/*
 results/logs/hparam_search/*
 results/models/*
 results/predictions/*
-!data/processed/.gitkeep
+!data/processed/train/.gitkeep
+!data/processed/val/.gitkeep
+!data/processed/test/.gitkeep
 !data/interpretability/.gitkeep
 !data/raw/.gitkeep
 !data/raw/HIFIS_Clients_example.csv
 !data/transformers/.gitkeep
 !documents/.gitkeep
 !documents/generated_images/.gitkeep
-!results/logs/.gitkeep
 !results/logs/training/.gitkeep
 !results/logs/hparam_search/.gitkeep
 !results/models/.gitkeep
