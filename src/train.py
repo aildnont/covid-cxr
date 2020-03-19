@@ -74,7 +74,8 @@ def train_model(cfg, data, model, callbacks, verbose=1):
     val_generator = val_img_gen.flow_from_dataframe(dataframe=data['VAL'], directory=cfg['PATHS']['VAL_IMGS'],
         x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='raw')
     test_generator = test_img_gen.flow_from_dataframe(dataframe=data['TEST'], directory=cfg['PATHS']['TEST_IMGS'],
-        x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='raw')
+        x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='raw',
+        shuffle=False)
 
     # Train the model.
     steps_per_epoch = ceil(train_generator.n / train_generator.batch_size)
