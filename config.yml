@@ -12,6 +12,7 @@ PATHS:
   LOGS: 'results\\logs\\'
   MODEL_WEIGHTS: 'results/models/model.h5'
   MODEL_TO_LOAD: 'results/models/model.h5'
+  LIME_EXPLAINER: './data/interpretability/lime_explainer.pkl'
 
 DATA:
   IMG_DIM: [224, 224]
@@ -33,15 +34,24 @@ NN:
     NODES:
       DENSE0: 128
       DENSE1: 32
-    LR: 0.00005
+    LR: 0.00001
     DROPOUT: 0.25
     L2_LAMBDA: 0.0001
 
 TRAIN:
   EXPERIMENT_TYPE: 'single_train'
   BATCH_SIZE: 16
-  EPOCHS: 15
+  EPOCHS: 60
   THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
   PATIENCE: 5
   IMB_STRATEGY: 'class_weight'  # One of {'class_weight', 'random_oversample'}
   POS_WEIGHT: 0.5
+
+LIME:
+  NUM_SAMPLES: 1000
+  NUM_FEATURES: 20000
+  KERNEL_WIDTH: 1.25
+  FEATURE_SELECTION: 'lasso_path'
+
+PREDICTION:
+  THRESHOLD: 0.5
