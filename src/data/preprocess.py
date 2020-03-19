@@ -5,6 +5,7 @@ import os
 import glob
 import pathlib
 import shutil
+from math import ceil
 from datetime import datetime
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
@@ -26,21 +27,21 @@ def preprocess():
     covid_df = pd.read_csv(metadata_file_path)
     PA_cxrs_df = (covid_df['view'] == 'PA')
     covid_patients_df = covid_df['finding'] == 'COVID-19'
-
     PA_covid_df = covid_df[covid_patients_df & PA_cxrs_df]      # PA images diagnosed COVID
     PA_covid_df['label'] = 1
     PA_other_df = covid_df[~covid_patients_df & PA_cxrs_df]     # PA images with other diagnoses
     PA_other_df['label'] = 0
-
     file_df = pd.concat([PA_covid_df[['filename', 'label']], PA_other_df[['filename', 'label']]], axis=0)
     file_df['filename'] = covid_data_path + 'images\\' + file_df['filename'].astype(str)    # Set as absolute paths
 
-    # Assemble filenames comprising other dataset
-    file_names = [(other_data_path + 'normal\\' + f) for f in os.listdir(other_data_path + 'normal\\') if
+    # Assemble filenames comprising Kaggle dataset that is organized into "normal" and "pneumonia" XRs
+    normal_xr_filenames = [(other_data_path + 'normal\\' + f) for f in os.listdir(other_data_path + 'normal\\') if
                   os.path.isfile(os.path.join(other_data_path + 'normal\\', f))]
-    file_names.extend([(other_data_path + 'pneumonia\\' + f) for f in os.listdir(other_data_path + 'pneumonia\\') if
-                       os.path.isfile(os.path.join(other_data_path + 'pneumonia\\', f))])
-    other_file_df = pd.DataFrame({'filename': file_names, 'label': 0})
+    normal_xr_filenames = normal_xr_filenames[0: ceil(0.5 * len(normal_xr_filenames))]
+    pneum_xr_filenames = [(other_data_path + 'pneumonia\\' + f) for f in os.listdir(other_data_path + 'pneumonia\\') if
+                       os.path.isfile(os.path.join(other_data_path + 'pneumonia\\', f))]
+    pneum_xr_filenames = pneum_xr_filenames[0: ceil(0.5 * len(pneum_xr_filenames))]
+    other_file_df = pd.DataFrame({'filename': normal_xr_filenames + pneum_xr_filenames, 'label': 0})
 
     # Combine both datasets
     file_df = pd.concat([file_df, other_file_df], axis=0)

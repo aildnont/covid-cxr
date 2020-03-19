@@ -11,6 +11,7 @@ from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ReduceLROnPlateau
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from src.models.models import mobilenet_model
+from src.visualization.visualize import *
 
 def get_class_weights(num_pos, num_neg, pos_weight=0.5):
     '''
@@ -68,15 +69,12 @@ def train_model(cfg, data, model, callbacks, verbose=1):
 
     # Create DataFrameIterators
     img_shape = tuple(cfg['DATA']['IMG_DIM'])
-    data['TRAIN']['label'] = data['TRAIN']['label'].astype('str')
-    data['VAL']['label'] = data['VAL']['label'].astype('str')
-    data['TEST']['label'] = data['TEST']['label'].astype('str')
     train_generator = train_img_gen.flow_from_dataframe(dataframe=data['TRAIN'], directory=cfg['PATHS']['TRAIN_IMGS'],
-        x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='binary')
+        x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='raw')
     val_generator = val_img_gen.flow_from_dataframe(dataframe=data['VAL'], directory=cfg['PATHS']['VAL_IMGS'],
-        x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='binary')
+        x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='raw')
     test_generator = test_img_gen.flow_from_dataframe(dataframe=data['TEST'], directory=cfg['PATHS']['TEST_IMGS'],
-        x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='binary')
+        x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='raw')
 
     # Train the model.
     steps_per_epoch = ceil(data['TRAIN'].shape[0] / cfg['TRAIN']['BATCH_SIZE'])
@@ -143,6 +141,8 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
 
     # Visualization of test results
     test_predictions = model.predict_generator(test_generator, verbose=0)
+    roc_img = plot_roc("Test set", data['Y_test'], test_predictions, dir_path=None)
+    cm_img = plot_confusion_matrix(data['Y_test'], test_predictions, dir_path=None)
 
     # Log test set results and plots in TensorBoard
     if write_logs:
@@ -156,6 +156,8 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
             test_summary_str.append([metric, str(metric_values)])
         with writer.as_default():
             tf.summary.text(name='Test set metrics', data=tf.convert_to_tensor(test_summary_str), step=0)
+            tf.summary.image(name='ROC Curve (Test Set)', data=roc_img, step=0)
+            tf.summary.image(name='Confusion Matrix (Test Set)', data=cm_img, step=0)
 
     if save_weights:
         model_path = os.path.splitext(cfg['PATHS']['MODEL_WEIGHTS'])[0] + cur_date + '.h5'
