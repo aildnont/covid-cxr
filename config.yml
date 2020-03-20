@@ -1,6 +1,6 @@
 PATHS:
-  RAW_COVID_DATA: 'D:/Documents/Work/covid-cxr/data/covid-chestxray-dataset/'
-  RAW_OTHER_DATA: 'D:/Documents/Work/covid-cxr/data/other/'
+  RAW_COVID_DATA: 'D:/Documents/Work/covid-cxr/data/covid-chestxray-dataset/'   # Path of extracted COVID dataset https://github.com/ieee8023/covid-chestxray-dataset
+  RAW_OTHER_DATA: 'D:/Documents/Work/covid-cxr/data/other/'                     # Path of extracted other dataset https://www.kaggle.com/paultimothymooney/chest-xray-pneumonia
   PROCESSED_DATA: 'data/processed/'
   TRAIN_IMGS: 'data/processed/train/'
   VAL_IMGS: 'data/processed/val/'
@@ -41,7 +41,7 @@ NN:
 TRAIN:
   EXPERIMENT_TYPE: 'single_train'
   BATCH_SIZE: 16
-  EPOCHS: 60
+  EPOCHS: 30
   THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
   PATIENCE: 5
   IMB_STRATEGY: 'class_weight'  # One of {'class_weight', 'random_oversample'}

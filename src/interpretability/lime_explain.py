@@ -8,6 +8,7 @@ import numpy as np
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from src.visualization.visualize import visualize_explanation
+from src.data.preprocess import remove_text
 
 def predict_instance(x, model):
     '''
@@ -69,7 +70,7 @@ def setup_lime():
     lime_dict['TEST_SET'] = pd.read_csv(cfg['PATHS']['TEST_SET'])
 
     # Create ImageDataGenerator for test set
-    test_img_gen = ImageDataGenerator(rescale=1.0/255.0)
+    test_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
     test_generator = test_img_gen.flow_from_dataframe(dataframe=lime_dict['TEST_SET'], directory=cfg['PATHS']['TEST_IMGS'],
         x_col="filename", y_col="label", target_size=tuple(cfg['DATA']['IMG_DIM']), batch_size=1,
         class_mode='raw', shuffle=False)
@@ -99,9 +100,8 @@ def explain_xray(lime_dict, idx, save_exp=True):
         x, y = lime_dict['TEST_GENERATOR'].next()
     x = np.squeeze(x, axis=0)
 
-    # Specify segmentation algorithm for superpixel identification. Parameters set to limit size of superpixels and
-    # promote border smoothness
-    segmentation_fn = SegmentationAlgorithm('quickshift', kernel_size=3, max_dist=50, ratio=0.1, sigma=0.2)
+    # Algorithm for superpixel segmentation. Parameters set to limit size of superpixels and promote border smoothness
+    segmentation_fn = SegmentationAlgorithm('quickshift', kernel_size=2.25, max_dist=50, ratio=0.1, sigma=0.15)
 
     # Make a prediction for this image and retrieve a LIME explanation for the prediction
     start_time = datetime.datetime.now()
@@ -116,7 +116,7 @@ def explain_xray(lime_dict, idx, save_exp=True):
         file_path = lime_dict['IMG_PATH']
     else:
         file_path = None
-    fig = visualize_explanation(x, explanation, img_filename, label, probs[0], file_path=file_path)
+    visualize_explanation(x, explanation, img_filename, label, probs[0], file_path=file_path)
     return
 
 

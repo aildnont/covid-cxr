@@ -13,6 +13,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from src.models.models import *
 from src.visualization.visualize import *
 from src.custom.metrics import F1Score
+from src.data.preprocess import remove_text
 
 def get_class_weights(num_pos, num_neg, pos_weight=0.5):
     '''
@@ -64,9 +65,9 @@ def train_model(cfg, data, model, callbacks, verbose=1):
         data['TRAIN'] = random_minority_oversample(data['TRAIN'])
 
     # Create ImageDataGenerators
-    train_img_gen = ImageDataGenerator(rescale=1.0/255.0)
-    val_img_gen = ImageDataGenerator(rescale=1.0/255.0)
-    test_img_gen = ImageDataGenerator(rescale=1.0/255.0)
+    train_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
+    val_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
+    test_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
 
     # Create DataFrameIterators
     img_shape = tuple(cfg['DATA']['IMG_DIM'])
@@ -161,9 +162,10 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
             tf.summary.image(name='ROC Curve (Test Set)', data=roc_img, step=0)
             tf.summary.image(name='Confusion Matrix (Test Set)', data=cm_img, step=0)
 
+    # Save the model's weights
     if save_weights:
         model_path = os.path.splitext(cfg['PATHS']['MODEL_WEIGHTS'])[0] + cur_date + '.h5'
-        save_model(model, model_path)        # Save model weights
+        save_model(model, model_path)
     return test_metrics
 
 
