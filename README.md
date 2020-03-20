@@ -104,13 +104,14 @@ global effort of identifying and treating cases of COVID-19.
    TensorBoard.  
    ![alt text](documents/readme_images/tensorboard_loss.png "Loss vs
    Epoch")  
-   ![alt text](documents/readme_images/tensorboard_auc.png "AUC vs Epoch")  
+   ![alt text](documents/readme_images/tensorboard_auc.png "AUC vs
+   Epoch")  
    You can also visualize the trained model's performance on the test
    set. See below for an example of the ROC Curve and Confusion Matrix
    based on test set predictions. In our implementation, these plots are
    available in the _IMAGES_ tab of TensorBoard.  
-   ![alt text](documents/readme_images/roc_example.png "ROC Curve")
-   ![alt text](documents/readme_images/cm_example.png "Confusion
+   ![alt text](documents/readme_images/roc_example.PNG "ROC Curve")
+   ![alt text](documents/readme_images/cm_example.PNG "Confusion
    Matrix")
 
 ## LIME Explanations
