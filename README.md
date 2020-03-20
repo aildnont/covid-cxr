@@ -1,6 +1,184 @@
 # COVID-19 Chest X-Ray Model
 ![alt text](documents/readme_images/london_logo.png "City of London logo")
 
+The goals of this project are twofold: (1) to develop a machine learning
+algorithm to distinguish chest X-rays of individuals with respiratory
+illness testing positive for COVID-19 from other X-rays, and (2) to
+promote discovery of patterns in such X-rays via machine learning
+interpretability algorithms. We are calling all machine learning
+practitioners and healthcare professionals to contribute their expertise
+to this effort. A model has been trained on a dataset composed of X-rays
+labeled positive for COVID-19 infection, normal X-rays, and X-rays
+depicting bacterial and viral pneumonias. Currently, we are using
+[Local Interpretable
+Model-Agnostic Explanations](https://arxiv.org/pdf/1602.04938.pdf) (i.e.
+LIME) as the interpretability method being applied to the model. This
+project is in need of more expertise and data. Please consider
+contributing or reaching out to us if you are able to lend a hand. This
+project is in its infancy. The immediacy of this work cannot be
+overstated, as any insights derived from this project may be of benefit
+to healthcare practitioners and researchers as the COVID-19 situation
+continues to evolve.
+
+## Why X-rays?
+There have been promising efforts to apply machine learning to aid in
+the diagnosis of COVID-19 based on
+[CT scans](https://pubs.rsna.org/doi/10.1148/radiol.2020200905). Despite
+the success of these methods, the fact remains that COVID-19 is an
+infection that is likely to be experienced by communities of all sizes.
+X-rays are inexpensive and quick to perform; therefore, they are more
+accessible to healthcare providers working in smaller and/or remote
+regions. Any insights that may be derived as a result of explainability
+algorithms applied to a successful model will be invaluable to the
+global effort of identifying and treating cases of COVID-19.
+
+## Getting Started
+1. Clone this repository (for help see this
+   [tutorial](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository)).
+2. Install the necessary dependencies (listed in
+   [requirements.txt](requirements.txt)). To do this, open a terminal in
+   the root directory of the project and run the following:
+   ```
+   $ pip install -r requirements.txt
+   ```
+3. Clone the
+   [covid-chestxray-dataset](https://github.com/ieee8023/covid-chestxray-dataset)
+   repository somewhere on your local machine. Set the _RAW_COVID_DATA_
+   field in the _PATHS_ section of [config.yml](config.yml) to the
+   address of the root directory of the cloned repository (for help see
+   [Project Config](#project-config)).
+4. Download and unzip the [Kaggle chest X-ray
+   pneumonia dataset](https://www.kaggle.com/paultimothymooney/chest-xray-pneumonia)
+   somewhere on your local machine. Move all examples in the _train_,
+   _val_ and _test_ subfolders to subfolders at the same level entitled
+   _normal_ and _pneumonia_. Set the _RAW_OTHER_DATA_ field in the
+   _PATHS_ section of [config.yml](config.yml) to the address of the
+   folder containing your dataset. This folder should now look something
+   like:
+   ```
+   ├── chest-xray-pneumonia 
+   │ ├── normal                    <- Normal images from train, val, test folders
+   │ └── pneumonia                 <- Pneumonia images from train, val, test folders
+   ```
+5. Execute [_preprocess.py_](src/data/preprocess.py) to create Pandas
+   DataFrames of filenames and labels. Preprocessed DataFrames and
+   corresponding images of the dataset will be saved within
+   _data/preprocessed/_.
+6. Execute [_train.py_](src/train.py) to train the neural network model.
+   The trained model weights will be saved within _results/models/_, and
+   its filename will resemble the following structure:
+   modelyyyymmdd-hhmmss.h5, where yyyymmdd-hhmmss is the current time.
+   The [TensorBoard](https://www.tensorflow.org/tensorboard) log files
+   will be saved within _results/logs/training/_.
+7. In [config.yml](config.yml), set _MODEL_TO_LOAD_ within _PATHS_ to
+   the path of the model weights file that was generated in step 6 (for
+   help see [Project Config](#project-config)). Execute
+   [_lime_explain.py_](src/interpretability/lime_explain.py) to generate
+   interpretable explanations for the model's predictions on the test
+   set. See more details in the [LIME Section](#lime).
+
+## Train a model and visualize results
+1. Once you have the appropriate datasets downloaded, execute
+   [_preprocess.py_](src/data/preprocess.py). See
+   [Getting Started](#getting-started) for help obtaining and organizing
+   these raw image datasets. If this script ran properly, you should see
+   folders entitled _train_, _test_, and _val_ within
+   _data/preprocessed_. Addionally, you should see 3 files entitled
+   _train_set.csv_, _val_set.csv_, and _test_set.csv_.
+2. In [config.yml](config.yml), ensure that _EXPERIMENT_TYPE_ within
+   _TRAIN_ is set to _'single_train'_.
+3. Execute [train.py](src/train.py). The trained model's weights will be
+   located in _results/models/_, and its filename will resemble the
+   following structure: modelyyyymmdd-hhmmss.h5, where yyyymmdd-hhmmss
+   is the current time. The model's logs will be located in
+   _results/logs/training/_, and its directory name will be the current
+   time in the same format. These logs contain information about the
+   experiment, such as metrics throughout the training process on the
+   training and validation sets, and performance on the test set. The
+   logs can be visualized by running
+   [TensorBoard](https://www.tensorflow.org/tensorboard) locally. See
+   below for examples of plots from a TensorBoard log file depicting
+   loss on the training and validation sets vs. epoch. Plots depicting
+   the change in performance metrics throughout the training process
+   (such as the example below) are available in the _SCALARS_ tab of
+   TensorBoard.  
+   ![alt text](documents/readme_images/tensorboard_loss.png "Loss vs
+   Epoch")  
+   ![alt text](documents/readme_images/tensorboard_auc.png "AUC vs Epoch")  
+   You can also visualize the trained model's performance on the test
+   set. See below for an example of the ROC Curve and Confusion Matrix
+   based on test set predictions. In our implementation, these plots are
+   available in the _IMAGES_ tab of TensorBoard.  
+   ![alt text](documents/readme_images/roc_example.png "ROC Curve")
+   ![alt text](documents/readme_images/cm_example.png "Confusion
+   Matrix")
+
+## LIME Explanations
+Since the predictions made by this model may be used be healthcare
+providers to benefit patients, it is imperative that the model's
+predictions may be explained so as to ensure that the it is making
+responsible predictions. Model explainability promotes transparency and
+accountability of decision-making algorithms. Since this model is a
+neural network, it is difficult to decipher which rules or heuristics it
+is employing to make its predictions. Since so little is known about
+presentation of COVID-19, interpretability is all the more important. We
+used [Local Interpretable
+Model-Agnostic Explanations](https://arxiv.org/pdf/1602.04938.pdf) (i.e.
+LIME) to explain the predictions of the neural network classifier that
+we trained. We used the implementation available in the authors' [GitHub
+repository](https://github.com/marcotcr/lime). LIME perturbs the
+features in an example and fits a linear model to approximate the neural
+network at the local region in the feature space surrounding the
+example. It then uses the linear model to determine which features were
+most contributory to the model's prediction for that example. By
+applying LIME to our trained model, we can conduct informed feature
+engineering based on any obviously inconsequential features we see
+insights from domain experts. For example, we noticed that different
+characters present on normal X-rays were contributing to predictions
+based off LIME explanations. To counter this unwanted behaviour, we have
+taken steps to remove and inpaint textual regions as much as possible.
+See the steps below to apply LIME to explain the model's predictions on
+examples in the test set.
+1. Having previously run _[preprocess.py](src/data/preprocess.py)_ and
+   _[train.py](src/train.py)_, ensure that _data/processed/_ contains
+   _Test_Set.csv_ and a folder called _test_ that contains the test set
+   images.
+2. In [config.yml](config.yml), set _MODEL_TO_LOAD_ within _PATHS_ to
+   the path of the model weights file (_.h5_ file) that you wish to use
+   for prediction.
+3. Execute _[lime_explain.py](src/interpretability/lime_explain.py)_. To
+   generate explanations for different images in the test set, modify
+   the following call: `explain_xray(lime_dict, i, save_exp=True)`. Set
+   _i_ to the index of the test set image you would like to explain and
+   rerun the script. If you are using an interactive console, you may
+   choose to simply call the function again instead of rerunning the
+   script.
+4. Interpret the output of the LIME explainer. An image will have been
+   generated that depicts the superpixels (i.e. image regions) that were
+   most contributory to the model's prediction. Superpixels that
+   contributed toward a prediction of COVID-19 are coloured green and
+   superpixels that contributed against a prediction of COVID-19 are
+   coloured red. The image will be automatically saved in
+   _documents/generated_images/_, and its filename will resemble the
+   following: _Client_client_id_exp_yyyymmdd-hhmmss.png_. See below for
+   examples of this graphic. Note that class 1 indicates that the scan
+   is positive for COVID-19.
+
+It is our hope that healthcare professionals will be able to provide
+feedback on the model based on their assessment of the quality of these
+explanations. If the explanations make sense to individuals with
+extensive experience interpreting X-rays, perhaps certain patterns can
+be identified as radiological signatures of COVID-19.
+
+![alt text](documents/readme_images/LIME_example0.PNG "Sample LIME
+explanation #1")  
+![alt text](documents/readme_images/LIME_example1.PNG "Sample LIME
+explanation #2")  
+![alt text](documents/readme_images/LIME_example2.PNG "Sample LIME
+explanation #3")  
+![alt text](documents/readme_images/LIME_example3.PNG "Sample LIME
+explanation #4")
+
 ## Project Structure
 The project looks similar to the directory structure below. Disregard
 any _.gitkeep_ files, as their only purpose is to force Git to track
