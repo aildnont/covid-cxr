@@ -21,7 +21,7 @@ def predict_instance(x, model):
     return probs
 
 
-def predict_and_explain(x, model, exp, num_features, num_samples):
+def predict_and_explain(x, model, exp, num_features, num_samples, segmentation_fn):
     '''
     Use the model to predict a single example and apply LIME to generate an explanation.
     :param x: Preprocessed image to predict
@@ -42,7 +42,7 @@ def predict_and_explain(x, model, exp, num_features, num_samples):
         return probs
 
     # Generate explanation for the example
-    explanation = exp.explain_instance(x, predict, num_features=num_features, num_samples=num_samples)
+    explanation = exp.explain_instance(x, predict, num_features=num_features, num_samples=num_samples, segmentation_fn=segmentation_fn)
     probs = predict_instance(np.expand_dims(x, axis=0), model)
     return explanation, probs
 
@@ -85,29 +85,42 @@ def setup_lime():
     return lime_dict
 
 
-def explain_xray(lime_dict, idx):
+def explain_xray(lime_dict, idx, save_exp=True):
     '''
     # Make a prediction and explain the rationale
     :param lime_dict: dict containing important information and objects for explanation experiments
     :param idx: index of image in test set to explain
+    :param save_exp: Boolean indicating whether to save the explanation visualization
     '''
 
     # Get i'th image in test set
+    lime_dict['TEST_GENERATOR'].reset()
     for i in range(idx + 1):
         x, y = lime_dict['TEST_GENERATOR'].next()
     x = np.squeeze(x, axis=0)
 
+    # Specify segmentation algorithm for superpixel identification. Parameters set to limit size of superpixels and
+    # promote border smoothness
+    segmentation_fn = SegmentationAlgorithm('quickshift', kernel_size=3, max_dist=50, ratio=0.1, sigma=0.2)
+
+    # Make a prediction for this image and retrieve a LIME explanation for the prediction
     start_time = datetime.datetime.now()
     explanation, probs = predict_and_explain(x, lime_dict['MODEL'], lime_dict['EXPLAINER'],
-                                      lime_dict['NUM_FEATURES'], lime_dict['NUM_SAMPLES'])
+                                      lime_dict['NUM_FEATURES'], lime_dict['NUM_SAMPLES'], segmentation_fn=segmentation_fn)
     print("Explanation time = " + str((datetime.datetime.now() - start_time).total_seconds()) + " seconds")
+
+    # Visualize the LIME explanation and optionally save it to disk
     img_filename = lime_dict['TEST_SET']['filename'][i]
     label = lime_dict['TEST_SET']['label'][i]
-    fig = visualize_explanation(explanation, img_filename, label, probs[0], file_path=lime_dict['IMG_PATH'])
+    if save_exp:
+        file_path = lime_dict['IMG_PATH']
+    else:
+        file_path = None
+    fig = visualize_explanation(x, explanation, img_filename, label, probs[0], file_path=file_path)
     return
 
 
 if __name__ == '__main__':
     lime_dict = setup_lime()
-    i = 0                                       # Select i'th image in test set
-    explain_xray(lime_dict, i)                  # Generate explanation for image
+    i = 0                                                       # Select i'th image in test set
+    explain_xray(lime_dict, i, save_exp=False)                  # Generate explanation for image
