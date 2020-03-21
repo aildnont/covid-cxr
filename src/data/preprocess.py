@@ -41,8 +41,12 @@ def build_dataset(cfg, covid_data_path, kaggle_data_path, mode='binary'):
                            os.path.isfile(os.path.join(kaggle_data_path + 'pneumonia\\', f))]
         pneum_xr_filenames = pneum_xr_filenames[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(pneum_xr_filenames))]
         other_file_df = pd.DataFrame({'filename': normal_xr_filenames + pneum_xr_filenames, 'label': 0})
+
+        file_df = pd.concat([file_df, other_file_df], axis=0)         # Combine both datasets
     else:
-        class_dict = {cfg['DATA']['CLASSES'][i]: i for i in range(len(cfg['DATA']['CLASSES']))} # Map class name to number
+        n_classes = len(cfg['DATA']['CLASSES'])
+        class_dict = {cfg['DATA']['CLASSES'][i]: i for i in range(n_classes)} # Map class name to number
+        label_dict = {i: cfg['DATA']['CLASSES'][i] for i in range(n_classes)} # Map class name to number
         PA_covid_df = covid_df[covid_patients_df & PA_cxrs_df]  # PA images diagnosed COVID
         PA_covid_df['label'] = class_dict['COVID-19']
         PA_sars_df = covid_df[(covid_df['finding'] == 'SARS') & PA_cxrs_df]   # PA images diagnosed with SARS
@@ -60,7 +64,7 @@ def build_dataset(cfg, covid_data_path, kaggle_data_path, mode='binary'):
         normal_xr_file_df = pd.DataFrame({'filename': normal_xr_files, 'label': class_dict['normal']})
         viral_pneum_xr_files = [(kaggle_data_path + 'pneumonia\\' + f) for f in
                                     os.listdir(kaggle_data_path + 'pneumonia\\') if
-                                    os.path.isfile(os.path.join(kaggle_data_path + 'pneumonia\\', f)) and ('viral' in f)]
+                                    os.path.isfile(os.path.join(kaggle_data_path + 'pneumonia\\', f)) and ('virus' in f)]
         viral_pneum_xr_files = viral_pneum_xr_files[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(viral_pneum_xr_files))]
         viral_xr_file_df = pd.DataFrame({'filename': viral_pneum_xr_files, 'label': class_dict['viral_pneumonia']})
         bacterial_pneum_xr_files = [(kaggle_data_path + 'pneumonia\\' + f) for f in
@@ -70,8 +74,9 @@ def build_dataset(cfg, covid_data_path, kaggle_data_path, mode='binary'):
         bacterial_xr_file_df = pd.DataFrame({'filename': bacterial_pneum_xr_files, 'label': class_dict['bacterial_pneumonia']})
         other_file_df = pd.concat([normal_xr_file_df, viral_xr_file_df, bacterial_xr_file_df], axis=0)
 
-    # Combine both datasets
-    file_df = pd.concat([file_df, other_file_df], axis=0)
+        file_df = pd.concat([file_df, other_file_df], axis=0)  # Combine both datasets
+        file_df['label_str'] = file_df['label'].map(label_dict) # Add column for string representation of label
+
     return file_df
 
 
