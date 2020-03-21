@@ -66,6 +66,7 @@ def setup_lime():
     lime_dict['TEST_IMGS_PATH'] = cfg['PATHS']['TEST_IMGS']
     lime_dict['PRED_THRESHOLD'] = cfg['PREDICTION']['THRESHOLD']
     lime_dict['CLASS_MODE'] = cfg['TRAIN']['CLASS_MODE']
+    lime_dict['COVID_ONLY'] = cfg['LIME']['COVID_ONLY']
     KERNEL_WIDTH = cfg['LIME']['KERNEL_WIDTH']
     FEATURE_SELECTION = cfg['LIME']['FEATURE_SELECTION']
 
@@ -120,10 +121,10 @@ def explain_xray(lime_dict, idx, save_exp=True):
         file_path = lime_dict['IMG_PATH']
     else:
         file_path = None
-    if lime_dict['CLASS_MODE'] == 'binary':
-        label_to_see = 'top'
-    else:
+    if lime_dict['CLASS_MODE'] == 'multiclass' and lime_dict['COVID_ONLY'] == True:
         label_to_see = 0    # See COVID-19 class explanation
+    else:
+        label_to_see = 'top'
     visualize_explanation(x, explanation, img_filename, label, probs[0], label_to_see=label_to_see, file_path=file_path)
     return
 
