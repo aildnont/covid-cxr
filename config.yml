@@ -11,7 +11,7 @@ PATHS:
   IMAGES: 'documents/generated_images/'
   LOGS: 'results\\logs\\'
   MODEL_WEIGHTS: 'results/models/model.h5'
-  MODEL_TO_LOAD: 'results/models/model.h5'
+  MODEL_TO_LOAD: 'results/models/model_good_mc0.h5'
   LIME_EXPLAINER: './data/interpretability/lime_explainer.pkl'
 
 DATA:
@@ -48,10 +48,10 @@ NN:
     KERNEL_SIZE: (3,3)
     STRIDES: (1,1)
     INIT_FILTERS: 32
-    FILTER_EXP_BASE: 2
+    FILTER_EXP_BASE: 3
     MAXPOOL_SIZE: (2,2)
     CONV_BLOCKS: 4
-    NODES_DENSE0: 128
+    NODES_DENSE0: 256
     LR: 0.00001
     DROPOUT: 0.25
     L2_LAMBDA: 0.0001

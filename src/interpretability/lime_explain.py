@@ -18,7 +18,10 @@ def predict_instance(x, model):
     :return: A numpy array comprising a list of class probabilities for each predicted perturbation
     '''
     y = model.predict(x)  # Run prediction on the perturbations
-    probs = np.concatenate([1.0 - y, y], axis=1)  # Compute class probabilities from the output of the model
+    if y.shape[1] == 1:
+        probs = np.concatenate([1.0 - y, y], axis=1)  # Compute class probabilities from the output of the model
+    else:
+        probs = y
     return probs
 
 
@@ -62,6 +65,7 @@ def setup_lime():
     lime_dict['IMG_PATH'] = cfg['PATHS']['IMAGES']
     lime_dict['TEST_IMGS_PATH'] = cfg['PATHS']['TEST_IMGS']
     lime_dict['PRED_THRESHOLD'] = cfg['PREDICTION']['THRESHOLD']
+    lime_dict['CLASS_MODE'] = cfg['TRAIN']['CLASS_MODE']
     KERNEL_WIDTH = cfg['LIME']['KERNEL_WIDTH']
     FEATURE_SELECTION = cfg['LIME']['FEATURE_SELECTION']
 
@@ -116,7 +120,11 @@ def explain_xray(lime_dict, idx, save_exp=True):
         file_path = lime_dict['IMG_PATH']
     else:
         file_path = None
-    visualize_explanation(x, explanation, img_filename, label, probs[0], file_path=file_path)
+    if lime_dict['CLASS_MODE'] == 'binary':
+        label_to_see = 'top'
+    else:
+        label_to_see = 0    # See COVID-19 class explanation
+    visualize_explanation(x, explanation, img_filename, label, probs[0], label_to_see=label_to_see, file_path=file_path)
     return
 
 

@@ -118,7 +118,7 @@ def plot_confusion_matrix(labels, predictions, class_id=0, p=0.5, dir_path=None)
     return plot_to_tensor()
 
 
-def visualize_explanation(orig_img, explanation, img_filename, label, probs, file_path=None):
+def visualize_explanation(orig_img, explanation, img_filename, label, probs, label_to_see='top', file_path=None):
     '''
     Visualize an explanation for the prediction of a single X-ray image.
     :param orig_img: Original X-Ray image
@@ -126,6 +126,7 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, fil
     :param img_filename: Filename of the image explained
     :param label: Ground truth class of the example
     :param probs: Prediction probabilities
+    :param label_to_see: Label to visualize in explanation
     :param file_path: Path to save the generated image
     '''
 
@@ -134,12 +135,15 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, fil
     ax[0].imshow(orig_img)
 
     # Plot the image and its explanation on the right
-    temp, mask = explanation.get_image_and_mask(explanation.top_labels[0], positive_only=False, num_features=10,
+    if label_to_see == 'top':
+        label_to_see = explanation.top_labels[0]
+    temp, mask = explanation.get_image_and_mask(label_to_see, positive_only=False, num_features=10,
                                                 hide_rest=False)
     ax[1].imshow(mark_boundaries(temp, mask))
 
     # Display some information about the example
-    fig.text(0.02, 0.8, "Prediction probabilities: ['0': {:.2f}, '1': {:.2f}]".format(probs[0], probs[1]), fontsize=10)
+    fig.text(0.02, 0.8, "Prediction probabilities: " + str(['{:.2f}'.format(probs[i]) for i in range(len(probs))]),
+             fontsize=10)
     fig.text(0.02, 0.82, "Ground Truth: " + str(label), fontsize=10)
     fig.suptitle("LIME Explanation for image " + img_filename, fontsize=15)
     fig.tight_layout()
