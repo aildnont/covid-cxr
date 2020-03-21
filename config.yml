@@ -11,7 +11,7 @@ PATHS:
   IMAGES: 'documents/generated_images/'
   LOGS: 'results\\logs\\'
   MODEL_WEIGHTS: 'results/models/model.h5'
-  MODEL_TO_LOAD: 'results/models/model_good_mc0.h5'
+  MODEL_TO_LOAD: 'results/models/model.h5'
   LIME_EXPLAINER: './data/interpretability/lime_explainer.pkl'
 
 DATA:
@@ -28,9 +28,8 @@ TRAIN:
   THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
   PATIENCE: 5
   IMB_STRATEGY: 'class_weight'  # One of {'class_weight', 'random_oversample'}
-  POS_WEIGHT: 0.5
-  CLASS_MODE: 'multiclass'
-  CLASS_MULTIPLIER: [3.0, 1.0, 1.0, 1.0]
+  CLASS_MODE: 'binary'          # One of {'binary', 'multiclass'}
+  CLASS_MULTIPLIER: [3.0, 1.0, 1.0, 1.0]    # For multi-class classification
 
 NN:
   DCNN_BINARY:

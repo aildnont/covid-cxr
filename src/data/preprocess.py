@@ -10,14 +10,16 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 
-def build_dataset(cfg, covid_data_path, kaggle_data_path, mode='binary'):
+def build_dataset(cfg):
     '''
     Build a dataset of filenames and labels according to the type of classification
-    :param cfg:
-    :param covid_data_path:
-    :param kaggle_data_path:
-    :return:
+    :param cfg: Project config dictionary
+    :return: DataFrame of file names of examples and corresponding class labels
     '''
+
+    # Get paths of raw datasets to be included
+    covid_data_path = cfg['PATHS']['RAW_COVID_DATA']
+    kaggle_data_path = cfg['PATHS']['RAW_OTHER_DATA']
 
     # Assemble filenames comprising COVID dataset
     metadata_file_path = covid_data_path + 'metadata.csv'
@@ -25,6 +27,7 @@ def build_dataset(cfg, covid_data_path, kaggle_data_path, mode='binary'):
     PA_cxrs_df = (covid_df['view'] == 'PA')
     covid_patients_df = covid_df['finding'] == 'COVID-19'
 
+    mode = cfg['TRAIN']['CLASS_MODE']
     if mode == 'binary':
         PA_covid_df = covid_df[covid_patients_df & PA_cxrs_df]      # PA images diagnosed COVID
         PA_covid_df['label'] = 1
@@ -101,12 +104,10 @@ def preprocess(mode='binary'):
     '''
 
     cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))  # Load config data
-    covid_data_path = cfg['PATHS']['RAW_COVID_DATA']
-    other_data_path = cfg['PATHS']['RAW_OTHER_DATA']
     processed_path = cfg['PATHS']['PROCESSED_DATA']
 
     # Build dataset based on type of classification
-    file_df = build_dataset(cfg, covid_data_path, other_data_path, mode=mode)
+    file_df = build_dataset(cfg)
 
     # Split dataset into train, val and test sets
     val_split = cfg['DATA']['VAL_SPLIT']
@@ -152,4 +153,4 @@ def preprocess(mode='binary'):
     return
 
 if __name__ == '__main__':
-    preprocess(mode='multiclass')
+    preprocess()

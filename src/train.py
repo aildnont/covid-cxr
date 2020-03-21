@@ -19,7 +19,7 @@ def get_class_weights(histogram, class_multiplier=None):
     '''
     Computes weights for each class to be applied in the loss function during training.
     :param histogram: A list depicting the number of each item in different class
-    :param pos_weight: The relative amount to further weigh the positive class
+    :param class_multiplier: List of values to multiply the calculated class weights by. For further control of class weighting.
     :return: A dictionary containing weights for each class
     '''
     weights = [None] * len(histogram)
