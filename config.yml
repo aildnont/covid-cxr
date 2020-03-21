@@ -11,7 +11,7 @@ PATHS:
   IMAGES: 'documents/generated_images/'
   LOGS: 'results\\logs\\'
   MODEL_WEIGHTS: 'results/models/model.h5'
-  MODEL_TO_LOAD: 'results/models/model.h5'
+  MODEL_TO_LOAD: 'results/models/model_good_mc0.h5'
   LIME_EXPLAINER: './data/interpretability/lime_explainer.pkl'
 
 DATA:
