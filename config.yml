@@ -18,7 +18,8 @@ DATA:
   IMG_DIM: [224, 224]
   VAL_SPLIT: 0.05
   TEST_SPLIT: 0.1
-  KAGGLE_DATA_FRAC: 0.2
+  KAGGLE_DATA_FRAC: 0.15
+  CLASSES: ['COVID-19', 'viral_pneumonia', 'bacterial_pneumonia', 'normal']
 
 NN:
   DCNN1:

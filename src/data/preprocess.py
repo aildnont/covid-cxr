@@ -9,6 +9,72 @@ from math import ceil
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
+
+def build_dataset(cfg, covid_data_path, kaggle_data_path, mode='binary'):
+    '''
+    Build a dataset of filenames and labels according to the type of classification
+    :param cfg:
+    :param covid_data_path:
+    :param kaggle_data_path:
+    :return:
+    '''
+
+    # Assemble filenames comprising COVID dataset
+    metadata_file_path = covid_data_path + 'metadata.csv'
+    covid_df = pd.read_csv(metadata_file_path)
+    PA_cxrs_df = (covid_df['view'] == 'PA')
+    covid_patients_df = covid_df['finding'] == 'COVID-19'
+
+    if mode == 'binary':
+        PA_covid_df = covid_df[covid_patients_df & PA_cxrs_df]      # PA images diagnosed COVID
+        PA_covid_df['label'] = 1
+        PA_other_df = covid_df[~covid_patients_df & PA_cxrs_df]     # PA images with other diagnoses
+        PA_other_df['label'] = 0
+        file_df = pd.concat([PA_covid_df[['filename', 'label']], PA_other_df[['filename', 'label']]], axis=0)
+        file_df['filename'] = covid_data_path + 'images\\' + file_df['filename'].astype(str)    # Set as absolute paths
+
+        # Assemble filenames comprising Kaggle dataset that is organized into "normal" and "pneumonia" XRs
+        normal_xr_filenames = [(kaggle_data_path + 'normal\\' + f) for f in os.listdir(kaggle_data_path + 'normal\\') if
+                      os.path.isfile(os.path.join(kaggle_data_path + 'normal\\', f))]
+        normal_xr_filenames = normal_xr_filenames[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(normal_xr_filenames))]
+        pneum_xr_filenames = [(kaggle_data_path + 'pneumonia\\' + f) for f in os.listdir(kaggle_data_path + 'pneumonia\\') if
+                           os.path.isfile(os.path.join(kaggle_data_path + 'pneumonia\\', f))]
+        pneum_xr_filenames = pneum_xr_filenames[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(pneum_xr_filenames))]
+        other_file_df = pd.DataFrame({'filename': normal_xr_filenames + pneum_xr_filenames, 'label': 0})
+    else:
+        class_dict = {cfg['DATA']['CLASSES'][i]: i for i in range(len(cfg['DATA']['CLASSES']))} # Map class name to number
+        PA_covid_df = covid_df[covid_patients_df & PA_cxrs_df]  # PA images diagnosed COVID
+        PA_covid_df['label'] = class_dict['COVID-19']
+        PA_sars_df = covid_df[(covid_df['finding'] == 'SARS') & PA_cxrs_df]   # PA images diagnosed with SARS
+        PA_sars_df['label'] = class_dict['viral_pneumonia']                 # Classify SARS with other viral pneumonias
+        PA_strep_df = covid_df[(covid_df['finding'] == 'Streptococcus') & PA_cxrs_df]   # PA images diagnosed with Strep
+        PA_strep_df['label'] = class_dict['bacterial_pneumonia']            # Classify Strep as bacterial pneumonias
+        file_df = pd.concat([PA_covid_df[['filename', 'label']], PA_sars_df[['filename', 'label']],
+                             PA_strep_df[['filename', 'label']]], axis=0)
+        file_df['filename'] = covid_data_path + 'images\\' + file_df['filename'].astype(str)  # Set as absolute paths
+
+        # Organize some files from Kaggle dataset into "normal", "bacterial pneumonia", "viral pneumonia" XRs
+        normal_xr_files = [(kaggle_data_path + 'normal\\' + f) for f in os.listdir(kaggle_data_path + 'normal\\') if
+                               os.path.isfile(os.path.join(kaggle_data_path + 'normal\\', f))]
+        normal_xr_files = normal_xr_files[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(normal_xr_files))]
+        normal_xr_file_df = pd.DataFrame({'filename': normal_xr_files, 'label': class_dict['normal']})
+        viral_pneum_xr_files = [(kaggle_data_path + 'pneumonia\\' + f) for f in
+                                    os.listdir(kaggle_data_path + 'pneumonia\\') if
+                                    os.path.isfile(os.path.join(kaggle_data_path + 'pneumonia\\', f)) and ('viral' in f)]
+        viral_pneum_xr_files = viral_pneum_xr_files[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(viral_pneum_xr_files))]
+        viral_xr_file_df = pd.DataFrame({'filename': viral_pneum_xr_files, 'label': class_dict['viral_pneumonia']})
+        bacterial_pneum_xr_files = [(kaggle_data_path + 'pneumonia\\' + f) for f in
+                                    os.listdir(kaggle_data_path + 'pneumonia\\') if
+                                    os.path.isfile(os.path.join(kaggle_data_path + 'pneumonia\\', f)) and ('bacteria' in f)]
+        bacterial_pneum_xr_files = bacterial_pneum_xr_files[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(bacterial_pneum_xr_files))]
+        bacterial_xr_file_df = pd.DataFrame({'filename': bacterial_pneum_xr_files, 'label': class_dict['bacterial_pneumonia']})
+        other_file_df = pd.concat([normal_xr_file_df, viral_xr_file_df, bacterial_xr_file_df], axis=0)
+
+    # Combine both datasets
+    file_df = pd.concat([file_df, other_file_df], axis=0)
+    return file_df
+
+
 def remove_text(img):
     '''
     Attempts to remove textual artifacts from X-ray images. For example, many images indicate the right side of the
@@ -22,10 +88,11 @@ def remove_text(img):
     return result
 
 
-def preprocess():
+def preprocess(mode='binary'):
     '''
     Preprocess and partition image data. Assemble all image file paths and partition into training, validation and
     test sets. Copy raw images to folders for training, validation and test sets.
+    :param mode: Type of classification. Set to either 'binary' or 'multiclass'
     '''
 
     cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))  # Load config data
@@ -33,29 +100,8 @@ def preprocess():
     other_data_path = cfg['PATHS']['RAW_OTHER_DATA']
     processed_path = cfg['PATHS']['PROCESSED_DATA']
 
-    # Assemble filenames comprising COVID dataset
-    metadata_file_path = covid_data_path + 'metadata.csv'
-    covid_df = pd.read_csv(metadata_file_path)
-    PA_cxrs_df = (covid_df['view'] == 'PA')
-    covid_patients_df = covid_df['finding'] == 'COVID-19'
-    PA_covid_df = covid_df[covid_patients_df & PA_cxrs_df]      # PA images diagnosed COVID
-    PA_covid_df['label'] = 1
-    PA_other_df = covid_df[~covid_patients_df & PA_cxrs_df]     # PA images with other diagnoses
-    PA_other_df['label'] = 0
-    file_df = pd.concat([PA_covid_df[['filename', 'label']], PA_other_df[['filename', 'label']]], axis=0)
-    file_df['filename'] = covid_data_path + 'images\\' + file_df['filename'].astype(str)    # Set as absolute paths
-
-    # Assemble filenames comprising Kaggle dataset that is organized into "normal" and "pneumonia" XRs
-    normal_xr_filenames = [(other_data_path + 'normal\\' + f) for f in os.listdir(other_data_path + 'normal\\') if
-                  os.path.isfile(os.path.join(other_data_path + 'normal\\', f))]
-    normal_xr_filenames = normal_xr_filenames[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(normal_xr_filenames))]
-    pneum_xr_filenames = [(other_data_path + 'pneumonia\\' + f) for f in os.listdir(other_data_path + 'pneumonia\\') if
-                       os.path.isfile(os.path.join(other_data_path + 'pneumonia\\', f))]
-    pneum_xr_filenames = pneum_xr_filenames[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(pneum_xr_filenames))]
-    other_file_df = pd.DataFrame({'filename': normal_xr_filenames + pneum_xr_filenames, 'label': 0})
-
-    # Combine both datasets
-    file_df = pd.concat([file_df, other_file_df], axis=0)
+    # Build dataset based on type of classification
+    file_df = build_dataset(cfg, covid_data_path, other_data_path, mode=mode)
 
     # Split dataset into train, val and test sets
     val_split = cfg['DATA']['VAL_SPLIT']
@@ -66,7 +112,7 @@ def preprocess():
                                                       stratify=file_df_train['label'])
 
     # Delete old datasets
-    dest_dir = os.path.join(os.getcwd(), cfg['PATHS']['PROCESSED_DATA'])
+    dest_dir = os.path.join(os.getcwd(), processed_path)
     print('Deleting old sets.')
     for path in pathlib.Path(os.path.join(dest_dir, 'train\\')).glob('*'):
         if '.gitkeep' not in str(path):
@@ -101,4 +147,4 @@ def preprocess():
     return
 
 if __name__ == '__main__':
-    preprocess()
+    preprocess(mode='multiclass')
