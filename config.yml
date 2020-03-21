@@ -24,12 +24,13 @@ DATA:
 TRAIN:
   EXPERIMENT_TYPE: 'single_train'
   BATCH_SIZE: 16
-  EPOCHS: 60
+  EPOCHS: 40
   THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
   PATIENCE: 5
   IMB_STRATEGY: 'class_weight'  # One of {'class_weight', 'random_oversample'}
   POS_WEIGHT: 0.5
   CLASS_MODE: 'multiclass'
+  CLASS_MULTIPLIER: [3.0, 1.0, 1.0, 1.0]
 
 NN:
   DCNN_BINARY:

@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import datetime
 import io
+import numpy as np
 from sklearn.metrics import confusion_matrix, roc_curve
 from skimage.segmentation import mark_boundaries
 
@@ -52,7 +53,7 @@ def plot_metrics(history, metrics, dir_path=None):
         plt.savefig(dir_path + 'metrics_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png')
     return
 
-def plot_roc(name, labels, predictions, dir_path=None):
+def plot_roc(name, labels, predictions, class_id=0, dir_path=None):
     '''
     Plots the ROC curve for predictions on a dataset
     :param name: Name of dataset on the plot
@@ -61,6 +62,9 @@ def plot_roc(name, labels, predictions, dir_path=None):
     :param dir_path: Directory in which to save image
     '''
     plt.clf()
+    if np.max(labels) > 1:
+        predictions = (np.argmax(predictions, axis=1) == labels)
+        labels = (labels == class_id)
     fp, tp, _ = roc_curve(labels, predictions)  # Get values for true positive and true negative
     plt.plot(100*fp, 100*tp, label=name, linewidth=2)   # Plot the ROC curve
     plt.xlabel('False positives [%]')
@@ -74,7 +78,7 @@ def plot_roc(name, labels, predictions, dir_path=None):
         plt.savefig(dir_path + 'ROC_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png')
     return plot_to_tensor()
 
-def plot_confusion_matrix(labels, predictions, p=0.5, dir_path=None):
+def plot_confusion_matrix(labels, predictions, class_id=0, p=0.5, dir_path=None):
     '''
     Plot a confusion matrix for the ground truth labels and corresponding model predictions.
     :param labels: Ground truth labels
@@ -83,6 +87,9 @@ def plot_confusion_matrix(labels, predictions, p=0.5, dir_path=None):
     :param dir_path: Directory in which to save image
     '''
     plt.clf()
+    if np.max(labels) > 1:
+        predictions = (np.argmax(predictions, axis=1) == labels)
+        labels = (labels == class_id)
     ax = plt.subplot()
     cm = confusion_matrix(labels, predictions > p)  # Calculate confusion matrix
     im = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)  # Plot confusion matrix

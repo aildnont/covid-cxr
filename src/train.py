@@ -15,7 +15,7 @@ from src.visualization.visualize import *
 from src.custom.metrics import F1Score
 from src.data.preprocess import remove_text
 
-def get_class_weights(histogram):
+def get_class_weights(histogram, class_multiplier=None):
     '''
     Computes weights for each class to be applied in the loss function during training.
     :param histogram: A list depicting the number of each item in different class
@@ -26,6 +26,9 @@ def get_class_weights(histogram):
     for i in range(len(histogram)):
         weights[i] = (1.0 / len(histogram)) * sum(histogram) / histogram[i]
     class_weight = {i: weights[i] for i in range(len(histogram))}
+    if class_multiplier is not None:
+        class_weight = [class_weight[i] * class_multiplier[i] for i in range(len(histogram))]
+    class_weight[0] *= 3
     print("Class weights: ", class_weight)
     return class_weight
 
@@ -59,8 +62,11 @@ def train_model(cfg, data, model, callbacks, verbose=1):
     # Apply class imbalance strategy. We have many more X-rays negative for COVID-19 than positive.
     histogram = np.bincount(data['TRAIN']['label'].astype(int))
     class_weight = None
+    class_multiplier = None
+    if cfg['TRAIN']['CLASS_MODE'] == 'multiclass':
+        class_multiplier = cfg['TRAIN']['CLASS_MULTIPLIER']
     if cfg['TRAIN']['IMB_STRATEGY'] == 'class_weight':
-        class_weight = get_class_weights(histogram)
+        class_weight = get_class_weights(histogram, class_multiplier)
     else:
         data['TRAIN'] = random_minority_oversample(data['TRAIN'])
 
