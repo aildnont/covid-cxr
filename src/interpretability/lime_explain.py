@@ -18,7 +18,10 @@ def predict_instance(x, model):
     :return: A numpy array comprising a list of class probabilities for each predicted perturbation
     '''
     y = model.predict(x)  # Run prediction on the perturbations
-    probs = np.concatenate([1.0 - y, y], axis=1)  # Compute class probabilities from the output of the model
+    if y.shape[1] == 1:
+        probs = np.concatenate([1.0 - y, y], axis=1)  # Compute class probabilities from the output of the model
+    else:
+        probs = y
     return probs
 
 
@@ -62,6 +65,8 @@ def setup_lime():
     lime_dict['IMG_PATH'] = cfg['PATHS']['IMAGES']
     lime_dict['TEST_IMGS_PATH'] = cfg['PATHS']['TEST_IMGS']
     lime_dict['PRED_THRESHOLD'] = cfg['PREDICTION']['THRESHOLD']
+    lime_dict['CLASS_MODE'] = cfg['TRAIN']['CLASS_MODE']
+    lime_dict['COVID_ONLY'] = cfg['LIME']['COVID_ONLY']
     KERNEL_WIDTH = cfg['LIME']['KERNEL_WIDTH']
     FEATURE_SELECTION = cfg['LIME']['FEATURE_SELECTION']
 
@@ -70,10 +75,16 @@ def setup_lime():
     lime_dict['TEST_SET'] = pd.read_csv(cfg['PATHS']['TEST_SET'])
 
     # Create ImageDataGenerator for test set
+    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
+        y_col = 'label'
+        class_mode = 'raw'
+    else:
+        y_col = 'label_str'
+        class_mode = 'categorical'
     test_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
     test_generator = test_img_gen.flow_from_dataframe(dataframe=lime_dict['TEST_SET'], directory=cfg['PATHS']['TEST_IMGS'],
-        x_col="filename", y_col="label", target_size=tuple(cfg['DATA']['IMG_DIM']), batch_size=1,
-        class_mode='raw', shuffle=False)
+        x_col="filename", y_col=y_col, target_size=tuple(cfg['DATA']['IMG_DIM']), batch_size=1,
+        class_mode=class_mode, shuffle=False)
     lime_dict['TEST_GENERATOR'] = test_generator
 
     # Define the LIME explainer
@@ -83,6 +94,8 @@ def setup_lime():
 
     # Load trained model's weights
     lime_dict['MODEL'] = load_model(cfg['PATHS']['MODEL_TO_LOAD'], compile=False)
+
+    test_predictions = lime_dict['MODEL'].predict_generator(test_generator, verbose=0)
     return lime_dict
 
 
@@ -116,7 +129,11 @@ def explain_xray(lime_dict, idx, save_exp=True):
         file_path = lime_dict['IMG_PATH']
     else:
         file_path = None
-    visualize_explanation(x, explanation, img_filename, label, probs[0], file_path=file_path)
+    if lime_dict['CLASS_MODE'] == 'multiclass' and lime_dict['COVID_ONLY'] == True:
+        label_to_see = 0    # See COVID-19 class explanation
+    else:
+        label_to_see = 'top'
+    visualize_explanation(x, explanation, img_filename, label, probs[0], label_to_see=label_to_see, file_path=file_path)
     return
 
 

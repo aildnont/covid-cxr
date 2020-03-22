@@ -16,12 +16,23 @@ PATHS:
 
 DATA:
   IMG_DIM: [224, 224]
-  VAL_SPLIT: 0.05
+  VAL_SPLIT: 0.08
   TEST_SPLIT: 0.1
   KAGGLE_DATA_FRAC: 0.2
+  CLASSES: ['COVID-19', 'viral_pneumonia', 'bacterial_pneumonia', 'normal']
+
+TRAIN:
+  EXPERIMENT_TYPE: 'single_train'
+  BATCH_SIZE: 16
+  EPOCHS: 35
+  THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
+  PATIENCE: 5
+  IMB_STRATEGY: 'class_weight'  # One of {'class_weight', 'random_oversample'}
+  CLASS_MODE: 'binary'          # One of {'binary', 'multiclass'}
+  CLASS_MULTIPLIER: [1.0, 1.0, 1.0, 1.0]    # For multi-class classification
 
 NN:
-  DCNN1:
+  DCNN_BINARY:
     KERNEL_SIZE: (3,3)
     STRIDES: (1,1)
     INIT_FILTERS: 32
@@ -32,21 +43,24 @@ NN:
     LR: 0.00001
     DROPOUT: 0.25
     L2_LAMBDA: 0.0001
-
-TRAIN:
-  EXPERIMENT_TYPE: 'single_train'
-  BATCH_SIZE: 16
-  EPOCHS: 30
-  THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
-  PATIENCE: 5
-  IMB_STRATEGY: 'class_weight'  # One of {'class_weight', 'random_oversample'}
-  POS_WEIGHT: 0.5
+  DCNN_MULTICLASS:
+    KERNEL_SIZE: (3,3)
+    STRIDES: (1,1)
+    INIT_FILTERS: 32
+    FILTER_EXP_BASE: 2
+    MAXPOOL_SIZE: (2,2)
+    CONV_BLOCKS: 5
+    NODES_DENSE0: 256
+    LR: 0.000075
+    DROPOUT: 0.4
+    L2_LAMBDA: 0.0001
 
 LIME:
   KERNEL_WIDTH: 1.75
   FEATURE_SELECTION: 'lasso_path'
   NUM_FEATURES: 10000
   NUM_SAMPLES: 4000
+  COVID_ONLY: false
 
 PREDICTION:
   THRESHOLD: 0.5

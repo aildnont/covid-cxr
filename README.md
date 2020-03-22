@@ -114,6 +114,31 @@ global effort of identifying and treating cases of COVID-19.
    ![alt text](documents/readme_images/cm_example.PNG "Confusion
    Matrix")
 
+## Binary vs. Multi-class Models
+The documentation in this README assumes the user is training a binary
+classifier, which is set by default in [config.yml](config.yml). The
+user has the option of training a model to perform binary prediction on
+whether the X-ray exhibits signs of COVID-19 or training a model to
+perform multi-class classification to distinguish COVID-19 cases, other
+viral pneumonia cases, bacterial pneumonia cases and normal X-rays. For
+a multi-class model, the output layer is a list of probabilities
+outputted by a softmax final layer. In the multi-class scenario,
+precision, recall and F1-Score are calculated for the COVID-19 class
+only. To train a multi-class classifier, the user should be aware of the
+following changes that may be made to [config.yml](config.yml):
+- Within the _TRAIN_ section, set the _CLASS_MODE_ field to
+  _'multiclass'_. By default, it is set to _'binary'_.
+- The class names are listed in the _CLASSES_ field of the _DATA_
+  section.
+- The relative weight of classes can be modified by updating the
+  _CLASS_MULTIPLIER_ field in the _TRAIN_ section.
+- You can update hyperparameters for the multiclass classification model
+  by setting the fields in the _DCNN_MULTICLASS_ subsection of _NN_.
+- In the multiclass scenario, LIME explanations are given for only the
+  COVID-19 logit of the model's prediction. If you wish to generate LIME
+  explanations for the prediction class (i.e. the logit with the highest
+  value), set _COVID_ONLY_ within _LIME_ to _'false'_.
+
 ## LIME Explanations
 Since the predictions made by this model may be used be healthcare
 providers to benefit patients, it is imperative that the model's
@@ -190,7 +215,7 @@ packages.
 ```
 ├── data
 │   ├── interpretability          <- Generated feature information
-│   ├── processed                 <- Products of preprocessing
+│   └── processed                 <- Products of preprocessing
 |
 ├── documents
 |   ├── generated_images          <- Visualizations of model performance, experiments
@@ -247,11 +272,34 @@ below.
 - **KAGGLE_DATA_FRAC**: Fraction of the images from the Kaggle chest
   X-ray dataset to use. The default value results in a dataset of > 1000
   images.
+- **CLASSES**: For a multi-class model, this is an ordered list of class
+  names.
+#### TRAIN
+- **EXPERIMENT_TYPE**: The type of training experiment you would like to
+  perform if executing [_train.py_](src/train.py). For now, the only
+  choice is _'single_train'_.
+- **EPOCHS**: Number of epochs to train the model for
+- **THRESHOLDS**: A single float or list of floats in range [0, 1]
+  defining the classification threshold. Affects precision and recall
+  metrics.
+- **BATCH_SIZE**: Mini-batch size during training
+- **IMB_STRATEGY**: Class imbalancing strategy to employ. In our
+  dataset, the ratio of positive to negative ground truth was very low,
+  prompting the use of these strategies. Set either to _'class_weight'_
+  or _'random_oversample'_.
+- **CLASS_MODE**: The type of classification to be performed. Should be
+  set before performing preprocessing. Set to either _'binary'_ or
+  _'multiclass'_.
+- **CLASS_MULTIPLIER**: For the multi-class scenario: a list of
+  coefficients to multiply the computed class weights by during
+  computation of loss function. Must be the same length as the number of
+  classes.
 #### NN
-- **DCNN1**: Contains definitions of configurable hyperparameters
-  associated with a custom deep convolutional neural network. The values
-  currently in this section were the optimal values for our dataset
-  informed by heuristically selecting hyperparameters.
+- **DCNN_BINARY**: Contains definitions of configurable hyperparameters
+  associated with a custom deep convolutional neural network for binary
+  classification. The values currently in this section were the optimal
+  values for our dataset informed by heuristically selecting
+  hyperparameters.
   - **KERNEL_SIZE**: Kernel size for convolutional layers
   - **STRIDES**: Size of strides for convolutional layers
   - **INIT_FILTERS**: Number of filters for first convolutional layer
@@ -266,25 +314,10 @@ below.
   - **LR**: Learning rate
   - **DROPOUT**: Dropout rate
   - **L2_LAMBDA**: L2 regularization parameter
-
-#### TRAIN
-- **EXPERIMENT_TYPE**: The type of training experiment you would like to
-  perform if executing [_train.py_](src/train.py). For now, the only
-  choice is _'single_train'_.
-- **EPOCHS**: Number of epochs to train the model for
-- **THRESHOLDS**: A single float or list of floats in range [0, 1]
-  defining the classification threshold. Affects precision and recall
-  metrics.
-- **BATCH_SIZE**: Mini-batch size during training
-- **IMB_STRATEGY**: Class imbalancing strategy to employ. In our
-  dataset, the ratio of positive to negative ground truth was very low,
-  prompting the use of these strategies. Set either to _'class_weight'_
-  or _'random_oversample'_.
-- **POS_WEIGHT**: Coefficient to multiply the positive class' weight by
-  during computation of loss function. Negative class' weight is
-  multiplied by _(1 - POS_WEIGHT)_. Increasing this number tends to
-  increase recall and decrease precision.
-
+- **DCNN_MULTICLASS**: Contains definitions of configurable
+  hyperparameters associated with a custom deep convolutional neural
+  network for multi-class classification. The fields are identical to
+  those in the _DCNN_BINARY_ subsection.
 #### LIME
 - **KERNEL_WIDTH**: Affects size of neighbourhood around which LIME
   samples for a particular example. In our experience, setting this
@@ -297,9 +330,13 @@ below.
   for more information.
 - **NUM_FEATURES**: The number of features to
   include in a LIME explanation
-- **NUM_SAMPLES**: The number of samples
-  used to fit a linear model when explaining a prediction using LIME
-
+- **NUM_SAMPLES**: The number of samples used to fit a linear model when
+  explaining a prediction using LIME
+- **COVID_ONLY**: When explaining predictions of a multi-class
+  classifier, set to _'true'_ if you want explanations to be provided
+  for the predicted logit corresponding to COVID-19 despite the model's
+  prediction. If set to _'false'_, explanations will be provided for the
+  logit corresponding to the predicted class.
 #### PREDICTION
 - **THRESHOLD**: Classification threshold for prediction
 

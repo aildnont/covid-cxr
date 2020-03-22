@@ -15,18 +15,21 @@ from src.visualization.visualize import *
 from src.custom.metrics import F1Score
 from src.data.preprocess import remove_text
 
-def get_class_weights(num_pos, num_neg, pos_weight=0.5):
+def get_class_weights(histogram, class_multiplier=None):
     '''
     Computes weights for each class to be applied in the loss function during training.
-    :param num_pos: # positive samples
-    :param num_neg: # negative samples
-    :param pos_weight: The relative amount to further weigh the positive class
+    :param histogram: A list depicting the number of each item in different class
+    :param class_multiplier: List of values to multiply the calculated class weights by. For further control of class weighting.
     :return: A dictionary containing weights for each class
     '''
-    weight_neg = (1 - pos_weight) * (num_neg + num_pos) / (num_neg)
-    weight_pos = pos_weight * (num_neg + num_pos) / (num_pos)
-    class_weight = {0: weight_neg, 1: weight_pos}
-    print("Class weights: Class 0 = {:.2f}, Class 1 = {:.2f}".format(weight_neg, weight_pos))
+    weights = [None] * len(histogram)
+    for i in range(len(histogram)):
+        weights[i] = (1.0 / len(histogram)) * sum(histogram) / histogram[i]
+    class_weight = {i: weights[i] for i in range(len(histogram))}
+    if class_multiplier is not None:
+        class_weight = [class_weight[i] * class_multiplier[i] for i in range(len(histogram))]
+    class_weight[0] *= 3
+    print("Class weights: ", class_weight)
     return class_weight
 
 
@@ -57,10 +60,13 @@ def train_model(cfg, data, model, callbacks, verbose=1):
     '''
 
     # Apply class imbalance strategy. We have many more X-rays negative for COVID-19 than positive.
-    num_neg, num_pos = np.bincount(data['TRAIN']['label'].astype(int))
+    histogram = np.bincount(data['TRAIN']['label'].astype(int))
     class_weight = None
+    class_multiplier = None
+    if cfg['TRAIN']['CLASS_MODE'] == 'multiclass':
+        class_multiplier = cfg['TRAIN']['CLASS_MULTIPLIER']
     if cfg['TRAIN']['IMB_STRATEGY'] == 'class_weight':
-        class_weight = get_class_weights(num_pos, num_neg, cfg['TRAIN']['POS_WEIGHT'])
+        class_weight = get_class_weights(histogram, class_multiplier)
     else:
         data['TRAIN'] = random_minority_oversample(data['TRAIN'])
 
@@ -71,12 +77,18 @@ def train_model(cfg, data, model, callbacks, verbose=1):
 
     # Create DataFrameIterators
     img_shape = tuple(cfg['DATA']['IMG_DIM'])
+    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
+        y_col = 'label'
+        class_mode = 'raw'
+    else:
+        y_col = 'label_str'
+        class_mode = 'categorical'
     train_generator = train_img_gen.flow_from_dataframe(dataframe=data['TRAIN'], directory=cfg['PATHS']['TRAIN_IMGS'],
-        x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='raw')
+        x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode)
     val_generator = val_img_gen.flow_from_dataframe(dataframe=data['VAL'], directory=cfg['PATHS']['VAL_IMGS'],
-        x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='raw')
+        x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode)
     test_generator = test_img_gen.flow_from_dataframe(dataframe=data['TEST'], directory=cfg['PATHS']['TEST_IMGS'],
-        x_col="filename", y_col="label", target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode='raw',
+        x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode,
         shuffle=False)
 
     # Train the model.
@@ -118,9 +130,15 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
 
     # Define metrics.
     thresholds = cfg['TRAIN']['THRESHOLDS']     # Load classification thresholds
-    metrics = ['accuracy', BinaryAccuracy(name='accuracy'), Precision(name='precision', thresholds=thresholds),
-               Recall(name='recall', thresholds=thresholds), AUC(name='auc'),
-               F1Score(name='f1score', thresholds=thresholds)]
+    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
+        covid_class_id = None
+    else:
+        covid_class_id = 0
+    metrics = ['accuracy', BinaryAccuracy(name='accuracy'),
+               Precision(name='precision', thresholds=thresholds, class_id=covid_class_id),
+               Recall(name='recall', thresholds=thresholds, class_id=covid_class_id),
+               AUC(name='auc'),
+               F1Score(name='f1score', thresholds=thresholds, class_id=covid_class_id)]
 
     # Set callbacks.
     early_stopping = EarlyStopping(monitor='val_loss', verbose=1, patience=cfg['TRAIN']['PATIENCE'], mode='min', restore_best_weights=True)
@@ -132,11 +150,15 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
         callbacks.append(tensorboard)
 
     # Define the model.
-    num_neg, num_pos = np.bincount(data['TRAIN']['label'].astype(int))
-    print("Class 0:", num_neg, "XRs. Class 1:", num_pos, "XRs.")
-    output_bias = np.log([num_pos / num_neg])
+    histogram = list(np.bincount(data['TRAIN']['label'].astype(int)))
+    print(['Class ' + str(i) + ': ' + str(histogram[i]) + '. ' for i in range(len(histogram))])
     input_shape = cfg['DATA']['IMG_DIM'] + [3]
-    model = dcnn1(cfg['NN']['DCNN1'], input_shape, metrics, output_bias=output_bias)   # Build model graph
+    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
+        output_bias = np.log([histogram[1] / histogram[0]])
+        model = dcnn_binary(cfg['NN']['DCNN_BINARY'], input_shape, metrics, output_bias=output_bias)
+    else:
+        n_classes = len(cfg['DATA']['CLASSES'])
+        model = dcnn_multiclass(cfg['NN']['DCNN_MULTICLASS'], input_shape, n_classes, metrics)
 
     # Conduct desired train experiment
     if experiment == 'single_train':
