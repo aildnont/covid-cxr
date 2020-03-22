@@ -75,10 +75,16 @@ def setup_lime():
     lime_dict['TEST_SET'] = pd.read_csv(cfg['PATHS']['TEST_SET'])
 
     # Create ImageDataGenerator for test set
+    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
+        y_col = 'label'
+        class_mode = 'raw'
+    else:
+        y_col = 'label_str'
+        class_mode = 'categorical'
     test_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
     test_generator = test_img_gen.flow_from_dataframe(dataframe=lime_dict['TEST_SET'], directory=cfg['PATHS']['TEST_IMGS'],
-        x_col="filename", y_col="label", target_size=tuple(cfg['DATA']['IMG_DIM']), batch_size=1,
-        class_mode='raw', shuffle=False)
+        x_col="filename", y_col=y_col, target_size=tuple(cfg['DATA']['IMG_DIM']), batch_size=1,
+        class_mode=class_mode, shuffle=False)
     lime_dict['TEST_GENERATOR'] = test_generator
 
     # Define the LIME explainer
@@ -88,6 +94,8 @@ def setup_lime():
 
     # Load trained model's weights
     lime_dict['MODEL'] = load_model(cfg['PATHS']['MODEL_TO_LOAD'], compile=False)
+
+    test_predictions = lime_dict['MODEL'].predict_generator(test_generator, verbose=0)
     return lime_dict
 
 

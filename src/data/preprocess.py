@@ -68,12 +68,13 @@ def build_dataset(cfg):
         viral_pneum_xr_files = [(kaggle_data_path + 'pneumonia\\' + f) for f in
                                     os.listdir(kaggle_data_path + 'pneumonia\\') if
                                     os.path.isfile(os.path.join(kaggle_data_path + 'pneumonia\\', f)) and ('virus' in f)]
-        viral_pneum_xr_files = viral_pneum_xr_files[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(viral_pneum_xr_files))]
-        viral_xr_file_df = pd.DataFrame({'filename': viral_pneum_xr_files, 'label': class_dict['viral_pneumonia']})
         bacterial_pneum_xr_files = [(kaggle_data_path + 'pneumonia\\' + f) for f in
                                     os.listdir(kaggle_data_path + 'pneumonia\\') if
                                     os.path.isfile(os.path.join(kaggle_data_path + 'pneumonia\\', f)) and ('bacteria' in f)]
-        bacterial_pneum_xr_files = bacterial_pneum_xr_files[0: ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * len(bacterial_pneum_xr_files))]
+        num_pneum_files = ceil(cfg['DATA']['KAGGLE_DATA_FRAC'] * min(len(viral_pneum_xr_files), len(bacterial_pneum_xr_files)))
+        viral_pneum_xr_files = viral_pneum_xr_files[0:num_pneum_files]
+        viral_xr_file_df = pd.DataFrame({'filename': viral_pneum_xr_files, 'label': class_dict['viral_pneumonia']})
+        bacterial_pneum_xr_files = bacterial_pneum_xr_files[0:num_pneum_files]
         bacterial_xr_file_df = pd.DataFrame({'filename': bacterial_pneum_xr_files, 'label': class_dict['bacterial_pneumonia']})
         other_file_df = pd.concat([normal_xr_file_df, viral_xr_file_df, bacterial_xr_file_df], axis=0)
 

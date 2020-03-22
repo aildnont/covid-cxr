@@ -63,8 +63,8 @@ def plot_roc(name, labels, predictions, class_id=0, dir_path=None):
     '''
     plt.clf()
     if np.max(labels) > 1:
-        predictions = (np.argmax(predictions, axis=1) == labels)
-        labels = (labels == class_id)
+        predictions = (np.argmax(predictions, axis=1) == class_id) * 1.0    # Only care about one class
+        labels = (labels == class_id) * 1.0
     fp, tp, _ = roc_curve(labels, predictions)  # Get values for true positive and true negative
     plt.plot(100*fp, 100*tp, label=name, linewidth=2)   # Plot the ROC curve
     plt.xlabel('False positives [%]')
@@ -88,8 +88,10 @@ def plot_confusion_matrix(labels, predictions, class_id=0, p=0.5, dir_path=None)
     '''
     plt.clf()
     if np.max(labels) > 1:
-        predictions = (np.argmax(predictions, axis=1) == labels)
-        labels = (labels == class_id)
+        single_class_preds = (np.argmax(predictions, axis=1) == class_id) * 1.0    # Only care about one class
+        single_class_labels = (labels == class_id) * 1.0
+        predictions = single_class_preds
+        labels = single_class_labels
     ax = plt.subplot()
     cm = confusion_matrix(labels, predictions > p)  # Calculate confusion matrix
     im = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)  # Plot confusion matrix

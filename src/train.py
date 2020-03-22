@@ -131,7 +131,7 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
     # Define metrics.
     thresholds = cfg['TRAIN']['THRESHOLDS']     # Load classification thresholds
     if cfg['TRAIN']['CLASS_MODE'] == 'binary':
-        covid_class_id = 1
+        covid_class_id = None
     else:
         covid_class_id = 0
     metrics = ['accuracy', BinaryAccuracy(name='accuracy'),
