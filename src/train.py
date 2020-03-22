@@ -133,7 +133,7 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
     if cfg['TRAIN']['CLASS_MODE'] == 'binary':
         covid_class_id = None
     else:
-        covid_class_id = 0
+        covid_class_id = 1
     metrics = ['accuracy', BinaryAccuracy(name='accuracy'),
                Precision(name='precision', thresholds=thresholds, class_id=covid_class_id),
                Recall(name='recall', thresholds=thresholds, class_id=covid_class_id),

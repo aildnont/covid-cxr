@@ -1,6 +1,6 @@
 PATHS:
   RAW_COVID_DATA: 'D:/Documents/Work/covid-cxr/data/covid-chestxray-dataset/'   # Path of extracted COVID dataset https://github.com/ieee8023/covid-chestxray-dataset
-  RAW_OTHER_DATA: 'D:/Documents/Work/covid-cxr/data/other/'                     # Path of extracted other dataset https://www.kaggle.com/paultimothymooney/chest-xray-pneumonia
+  RAW_OTHER_DATA: 'D:/Documents/Work/covid-cxr/data/rsna/'                       # Path of extracted NIH dataset https://nihcc.app.box.com/v/ChestXray-NIHCC
   PROCESSED_DATA: 'data/processed/'
   TRAIN_IMGS: 'data/processed/train/'
   VAL_IMGS: 'data/processed/val/'
@@ -19,17 +19,18 @@ DATA:
   VAL_SPLIT: 0.08
   TEST_SPLIT: 0.1
   KAGGLE_DATA_FRAC: 0.2
-  CLASSES: ['COVID-19', 'viral_pneumonia', 'bacterial_pneumonia', 'normal']
+  DATASET_SIZE: 1200
+  CLASSES: ['normal', 'COVID-19', 'other_pneumonia']
 
 TRAIN:
   EXPERIMENT_TYPE: 'single_train'
   BATCH_SIZE: 16
-  EPOCHS: 35
+  EPOCHS: 60
   THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
   PATIENCE: 5
   IMB_STRATEGY: 'class_weight'  # One of {'class_weight', 'random_oversample'}
-  CLASS_MODE: 'binary'          # One of {'binary', 'multiclass'}
-  CLASS_MULTIPLIER: [1.0, 1.0, 1.0, 1.0]    # For multi-class classification
+  CLASS_MODE: 'multiclass'          # One of {'binary', 'multiclass'}
+  CLASS_MULTIPLIER: [1.0, 1.0, 1.0]    # For multi-class classification
 
 NN:
   DCNN_BINARY:
@@ -51,8 +52,8 @@ NN:
     MAXPOOL_SIZE: (2,2)
     CONV_BLOCKS: 5
     NODES_DENSE0: 256
-    LR: 0.000075
-    DROPOUT: 0.4
+    LR: 0.00001
+    DROPOUT: 0.3
     L2_LAMBDA: 0.0001
 
 LIME:
