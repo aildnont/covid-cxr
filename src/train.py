@@ -38,12 +38,14 @@ def random_minority_oversample(train_set):
     :param train_set: Training set image file names and labels
     :return: A new training set containing oversampled examples
     '''
-    X_train = train_set['filename'].to_numpy()
+    X_train = train_set[[x for x in train_set.columns if x != 'label']].to_numpy()
+    if X_train.shape[1] == 1:
+        X_train = np.expand_dims(X_train, axis=-1)
     Y_train = train_set['label'].to_numpy()
     sampler = RandomOverSampler(random_state=np.random.randint(0, high=1000))
     X_resampled, Y_resampled = sampler.fit_resample(X_train, Y_train)
     print("Train set shape before oversampling: ", X_train.shape, " Train set shape after resampling: ", X_resampled.shape)
-    train_set_resampled = pd.DataFrame({'filename': X_resampled, 'label':Y_resampled})
+    train_set_resampled = pd.DataFrame({'filename': np.squeeze(X_resampled, axis=1), 'label':Y_resampled})
     return train_set_resampled
 
 
@@ -56,6 +58,9 @@ def train_model(cfg, data, callbacks, verbose=1):
     :param verbose: Verbosity mode to pass to model.fit_generator()
     :return: Trained model and associated performance metrics on the test set
     '''
+
+    if cfg['TRAIN']['IMB_STRATEGY'] == 'random_oversample':
+        data['TRAIN'] = random_minority_oversample(data['TRAIN'])
 
     # Create ImageDataGenerators
     train_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
@@ -79,17 +84,14 @@ def train_model(cfg, data, callbacks, verbose=1):
         shuffle=False)
 
     # Apply class imbalance strategy. We have many more X-rays negative for COVID-19 than positive.
-    class_weight = None
     if cfg['TRAIN']['IMB_STRATEGY'] == 'class_weight':
         class_multiplier = None
         if cfg['TRAIN']['CLASS_MODE'] == 'binary':
             histogram = np.bincount(data['TRAIN']['label'].astype(int))
         else:
-            histogram = np.bincount(np.array(train_generator.labels).astype(int))
+            histogram = np.bincount(np.array(train_generator.labels).astype(int))   # Get class distribution
             class_multiplier = cfg['TRAIN']['CLASS_MULTIPLIER']
         class_weight = get_class_weights(histogram, class_multiplier)
-    else:
-        data['TRAIN'] = random_minority_oversample(data['TRAIN'])
 
     # Define metrics.
     thresholds = cfg['TRAIN']['THRESHOLDS']     # Load classification thresholds
@@ -101,8 +103,9 @@ def train_model(cfg, data, callbacks, verbose=1):
                    F1Score(name='f1score', thresholds=thresholds)]
     else:
         covid_class_idx = test_generator.class_indices['COVID-19']   # Get index of COVID-19 class
-        thresholds = 1.0 / len(cfg['DATA']['CLASSES'])
-        metrics = ['accuracy', BinaryAccuracy(name='accuracy'),
+        thresholds = 1.0 / len(cfg['DATA']['CLASSES'])      # Binary classification threshold of predicted class
+        # Binary metrics (precision, recall, F1 Score) only computed for COVID-19 class
+        metrics = ['accuracy', CategoricalAccuracy(name='accuracy'),
                    Precision(name='precision', thresholds=thresholds, class_id=covid_class_idx),
                    Recall(name='recall', thresholds=thresholds, class_id=covid_class_idx),
                    AUC(name='auc'),
@@ -110,7 +113,7 @@ def train_model(cfg, data, callbacks, verbose=1):
 
     # Define the model.
     histogram = list(np.bincount(data['TRAIN']['label'].astype(int)))
-    print(['Class ' + str(i) + ': ' + str(histogram[i]) + '. ' for i in range(len(histogram))])
+    print(['Class ' + str(cfg['DATA']['CLASSES'][i]) + ': ' + str(histogram[i]) + '. ' for i in range(len(histogram))])
     input_shape = cfg['DATA']['IMG_DIM'] + [3]
     if cfg['TRAIN']['CLASS_MODE'] == 'binary':
         output_bias = np.log([histogram[1] / histogram[0]])

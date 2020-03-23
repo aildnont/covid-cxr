@@ -98,6 +98,7 @@ def dcnn_multiclass(model_config, input_shape, num_classes, metrics):
     model.add(Flatten())
     model.add(Dropout(dropout))
     model.add(Dense(nodes_dense0, kernel_initializer='he_uniform', activity_regularizer=l2(l2_lambda)))
+    model.add(Dropout(dropout))
     model.add(LeakyReLU())
     model.add(Dense(num_classes, activation='softmax', name='output'))
 
