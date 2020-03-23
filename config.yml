@@ -25,7 +25,7 @@ DATA:
 TRAIN:
   EXPERIMENT_TYPE: 'single_train'
   BATCH_SIZE: 16
-  EPOCHS: 60
+  EPOCHS: 40
   THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
   PATIENCE: 5
   IMB_STRATEGY: 'class_weight'  # One of {'class_weight', 'random_oversample'}
@@ -52,8 +52,8 @@ NN:
     MAXPOOL_SIZE: (2,2)
     CONV_BLOCKS: 5
     NODES_DENSE0: 256
-    LR: 0.00001
-    DROPOUT: 0.3
+    LR: 0.00005
+    DROPOUT: 0.4
     L2_LAMBDA: 0.0001
 
 LIME:

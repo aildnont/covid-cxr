@@ -1,5 +1,5 @@
 import numpy as np
-from tensorflow.keras.metrics import Metric
+from tensorflow.keras.metrics import Metric, Precision, Recall
 from tensorflow.python.keras.utils import metrics_utils
 from tensorflow.python.ops import init_ops
 from tensorflow.python.ops import math_ops

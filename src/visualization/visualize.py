@@ -53,18 +53,21 @@ def plot_metrics(history, metrics, dir_path=None):
         plt.savefig(dir_path + 'metrics_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png')
     return
 
-def plot_roc(name, labels, predictions, class_id=0, dir_path=None):
+def plot_roc(name, labels, predictions, class_id=1, dir_path=None):
     '''
     Plots the ROC curve for predictions on a dataset
     :param name: Name of dataset on the plot
     :param labels: Ground truth labels
     :param predictions: Model predictions corresponding to the labels
+    :param class_id: Index of class to consider
     :param dir_path: Directory in which to save image
     '''
     plt.clf()
     if np.max(labels) > 1:
-        predictions = (np.argmax(predictions, axis=1) == class_id) * 1.0    # Only care about one class
-        labels = (labels == class_id) * 1.0
+        single_class_preds = predictions[:, class_id]    # Only care about one class
+        single_class_labels = (np.array(labels) == class_id) * 1.0
+        predictions = single_class_preds
+        labels = single_class_labels
     fp, tp, _ = roc_curve(labels, predictions)  # Get values for true positive and true negative
     plt.plot(100*fp, 100*tp, label=name, linewidth=2)   # Plot the ROC curve
     plt.xlabel('False positives [%]')
@@ -78,18 +81,20 @@ def plot_roc(name, labels, predictions, class_id=0, dir_path=None):
         plt.savefig(dir_path + 'ROC_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png')
     return plot_to_tensor()
 
-def plot_confusion_matrix(labels, predictions, class_id=0, p=0.5, dir_path=None):
+def plot_confusion_matrix(labels, predictions, class_id=1, p=0.5, dir_path=None):
     '''
     Plot a confusion matrix for the ground truth labels and corresponding model predictions.
     :param labels: Ground truth labels
     :param predictions: Model predictions
+    :param class_id: Index of class to consider
     :param p: Classification threshold
     :param dir_path: Directory in which to save image
     '''
     plt.clf()
     if np.max(labels) > 1:
-        single_class_preds = (np.argmax(predictions, axis=1) == class_id) * 1.0    # Only care about one class
-        single_class_labels = (labels == class_id) * 1.0
+        p = 1.0 / np.unique(labels).shape[0]
+        single_class_preds = predictions[:, class_id]    # Only care about one class
+        single_class_labels = (np.array(labels) == class_id) * 1.0
         predictions = single_class_preds
         labels = single_class_labels
     ax = plt.subplot()
@@ -120,7 +125,7 @@ def plot_confusion_matrix(labels, predictions, class_id=0, p=0.5, dir_path=None)
     return plot_to_tensor()
 
 
-def visualize_explanation(orig_img, explanation, img_filename, label, probs, label_to_see='top', file_path=None):
+def visualize_explanation(orig_img, explanation, img_filename, label, probs, class_names, label_to_see='top', file_path=None):
     '''
     Visualize an explanation for the prediction of a single X-ray image.
     :param orig_img: Original X-Ray image
@@ -128,6 +133,7 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, lab
     :param img_filename: Filename of the image explained
     :param label: Ground truth class of the example
     :param probs: Prediction probabilities
+    :param class_names: Ordered list of class names
     :param label_to_see: Label to visualize in explanation
     :param file_path: Path to save the generated image
     '''
@@ -144,9 +150,11 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, lab
     ax[1].imshow(mark_boundaries(temp, mask))
 
     # Display some information about the example
+    pred_class = np.argmax(probs)
     fig.text(0.02, 0.8, "Prediction probabilities: " + str(['{:.2f}'.format(probs[i]) for i in range(len(probs))]),
              fontsize=10)
-    fig.text(0.02, 0.82, "Ground Truth: " + str(label), fontsize=10)
+    fig.text(0.02, 0.82, "Predicted Class: " + str(pred_class) + ' (' + class_names[pred_class] + ')', fontsize=10)
+    fig.text(0.02, 0.84, "Ground Truth Class: " + str(label) + ' (' + class_names[label] + ')', fontsize=10)
     fig.suptitle("LIME Explanation for image " + img_filename, fontsize=15)
     fig.tight_layout()
 
