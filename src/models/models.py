@@ -29,6 +29,7 @@ def dcnn_binary(model_config, input_shape, metrics, output_bias=None):
     strides = eval(model_config['STRIDES'])
     if output_bias is not None:
         output_bias = Constant(output_bias)
+    print("MODEL CONFIG: ", model_config)
 
     model = Sequential(name='covid-19-cxr-custom1')
 
@@ -98,7 +99,6 @@ def dcnn_multiclass(model_config, input_shape, num_classes, metrics):
     model.add(Flatten())
     model.add(Dropout(dropout))
     model.add(Dense(nodes_dense0, kernel_initializer='he_uniform', activity_regularizer=l2(l2_lambda)))
-    model.add(Dropout(dropout))
     model.add(LeakyReLU())
     model.add(Dense(num_classes, activation='softmax', name='output'))
 
@@ -108,12 +108,11 @@ def dcnn_multiclass(model_config, input_shape, num_classes, metrics):
     return model
 
 
-def dcnn_multiclass_resnet(model_config, input_shape, num_classes, metrics):
+def dcnn_binary_resnet(model_config, input_shape, metrics, output_bias=None):
     '''
     Defines a deep convolutional neural network model for multiclass X-ray classification.
     :param model_config: A dictionary of parameters associated with the model architecture
     :param input_shape: The shape of the model input
-    :param num_classes: Number of output classes
     :param metrics: Metrics to track model's performance
     :return: a Keras Sequential model object with the architecture defined in this method
     '''
@@ -130,6 +129,9 @@ def dcnn_multiclass_resnet(model_config, input_shape, num_classes, metrics):
     kernel_size = eval(model_config['KERNEL_SIZE'])
     max_pool_size = eval(model_config['MAXPOOL_SIZE'])
     strides = eval(model_config['STRIDES'])
+    if output_bias is not None:
+        output_bias = Constant(output_bias)
+    print("MODEL CONFIG: ", model_config)
 
     X_input = Input(input_shape)
     X = X_input
@@ -153,10 +155,10 @@ def dcnn_multiclass_resnet(model_config, input_shape, num_classes, metrics):
     X = Dropout(dropout)(X)
     X = Dense(nodes_dense0, kernel_initializer='he_uniform', activity_regularizer=l2(l2_lambda))(X)
     X = LeakyReLU()(X)
-    Y = Dense(num_classes, activation='softmax', name='output')(X)
+    Y = Dense(1, activation='sigmoid', bias_initializer=output_bias, name='output')(X)
 
     # Set model loss function, optimizer, metrics.
     model = Model(inputs=X_input, outputs=Y)
-    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=metrics)
+    model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=metrics)
     model.summary()
     return model

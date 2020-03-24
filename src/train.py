@@ -1,11 +1,11 @@
 import pandas as pd
 import yaml
 import os
-import tensorflow as tf
+import datetime
 import numpy as np
 from imblearn.over_sampling import RandomOverSampler
 from math import ceil
-import datetime
+import tensorflow.summary as tf_summary
 from tensorflow.keras.metrics import BinaryAccuracy, CategoricalAccuracy, Precision, Recall, AUC
 from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ReduceLROnPlateau
@@ -63,7 +63,7 @@ def train_model(cfg, data, callbacks, verbose=1):
         data['TRAIN'] = random_minority_oversample(data['TRAIN'])
 
     # Create ImageDataGenerators
-    train_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
+    train_img_gen = ImageDataGenerator(rescale=1.0/255.0, rotation_range=10, preprocessing_function=remove_text)
     val_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
     test_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
 
@@ -85,12 +85,11 @@ def train_model(cfg, data, callbacks, verbose=1):
 
     # Apply class imbalance strategy. We have many more X-rays negative for COVID-19 than positive.
     if cfg['TRAIN']['IMB_STRATEGY'] == 'class_weight':
-        class_multiplier = None
+        class_multiplier = cfg['TRAIN']['CLASS_MULTIPLIER']
         if cfg['TRAIN']['CLASS_MODE'] == 'binary':
             histogram = np.bincount(data['TRAIN']['label'].astype(int))
         else:
             histogram = np.bincount(np.array(train_generator.labels).astype(int))   # Get class distribution
-            class_multiplier = cfg['TRAIN']['CLASS_MULTIPLIER']
         class_weight = get_class_weights(histogram, class_multiplier)
 
     # Define metrics.
@@ -112,12 +111,13 @@ def train_model(cfg, data, callbacks, verbose=1):
                    F1Score(name='f1score', thresholds=thresholds, class_id=covid_class_idx)]
 
     # Define the model.
-    histogram = list(np.bincount(data['TRAIN']['label'].astype(int)))
-    print(['Class ' + str(cfg['DATA']['CLASSES'][i]) + ': ' + str(histogram[i]) + '. ' for i in range(len(histogram))])
+    print('Training distribution: ', ['Class ' + str(cfg['DATA']['CLASSES'][i]) + ': ' + str(histogram[i]) + '. '
+           for i in range(len(histogram))])
     input_shape = cfg['DATA']['IMG_DIM'] + [3]
     if cfg['TRAIN']['CLASS_MODE'] == 'binary':
+        histogram = np.bincount(data['TRAIN']['label'].astype(int))
         output_bias = np.log([histogram[1] / histogram[0]])
-        model = dcnn_binary(cfg['NN']['DCNN_BINARY'], input_shape, metrics, output_bias=output_bias)
+        model = dcnn_binary_resnet(cfg['NN']['DCNN_BINARY'], input_shape, metrics, output_bias=output_bias)
     else:
         n_classes = len(cfg['DATA']['CLASSES'])
         model = dcnn_multiclass(cfg['NN']['DCNN_MULTICLASS'], input_shape, n_classes, metrics)
@@ -162,7 +162,7 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
 
     # Set callbacks.
     early_stopping = EarlyStopping(monitor='val_loss', verbose=1, patience=cfg['TRAIN']['PATIENCE'], mode='min', restore_best_weights=True)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, min_lr=0.00001, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=0.00001, verbose=1)
     callbacks = [early_stopping]
     if write_logs:
         log_dir = cfg['PATHS']['LOGS'] + "training\\" + cur_date
@@ -185,7 +185,9 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
 
     # Log test set results and plots in TensorBoard
     if write_logs:
-        writer = tf.summary.create_file_writer(logdir=log_dir)
+        writer = tf_summary.create_file_writer(logdir=log_dir)
+
+        # Create table of test set metrics
         test_summary_str = [['**Metric**','**Value**']]
         thresholds = cfg['TRAIN']['THRESHOLDS']  # Load classification thresholds
         for metric in test_metrics:
@@ -194,10 +196,24 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
             else:
                 metric_values = test_metrics[metric]
             test_summary_str.append([metric, str(metric_values)])
+
+        # Create table of model and train config values
+        hparam_summary_str = [['**Variable**', '**Value**']]
+        for key in cfg['TRAIN']:
+            hparam_summary_str.append([key, str(cfg['TRAIN'][key])])
+        if cfg['TRAIN']['CLASS_MODE'] == 'binary':
+            for key in cfg['NN']['DCNN_BINARY']:
+                hparam_summary_str.append([key, str(cfg['NN']['DCNN_BINARY'][key])])
+        else:
+            for key in cfg['NN']['DCNN_MULTICLASS']:
+                hparam_summary_str.append([key, str(cfg['NN']['DCNN_BINARY'][key])])
+
+        # Write to TensorBoard logs
         with writer.as_default():
-            tf.summary.text(name='Test set metrics', data=tf.convert_to_tensor(test_summary_str), step=0)
-            tf.summary.image(name='ROC Curve (Test Set)', data=roc_img, step=0)
-            tf.summary.image(name='Confusion Matrix (Test Set)', data=cm_img, step=0)
+            tf_summary.text(name='Test set metrics', data=tf.convert_to_tensor(test_summary_str), step=0)
+            tf_summary.text(name='Run hyperparameters', data=tf.convert_to_tensor(hparam_summary_str), step=0)
+            tf_summary.image(name='ROC Curve (Test Set)', data=roc_img, step=0)
+            tf_summary.image(name='Confusion Matrix (Test Set)', data=cm_img, step=0)
 
     # Save the model's weights
     if save_weights:

@@ -31,7 +31,7 @@ def build_dataset(cfg):
     # Assemble filenames comprising RSNA dataset
     rsna_metadata_path = other_data_path + 'stage_2_train_labels.csv'
     rsna_df = pd.read_csv(rsna_metadata_path)
-    num_rsna_imgs = cfg['DATA']['DATASET_SIZE'] - covid_patients_df.shape[0]
+    num_rsna_imgs = cfg['DATA']['NUM_RSNA_IMGS']
     rsna_normal_df = rsna_df[rsna_df['Target'] == 0][0:num_rsna_imgs//2]
     rsna_pneum_df = rsna_df[rsna_df['Target'] == 1][0:num_rsna_imgs//2]
 
@@ -83,6 +83,39 @@ def build_dataset(cfg):
         file_df['label_str'] = file_df['label'].map(label_dict) # Add column for string representation of label
 
     return file_df
+
+
+def remove_text(img):
+    '''
+    Attempts to remove textual artifacts from X-ray images. For example, many images indicate the right side of the
+    body with a white 'R'. Works only for very bright text.
+    :param img: Numpy array of image
+    :return: Array of image with (ideally) any characters removed and inpainted
+    '''
+    mask = cv2.threshold(img, 230, 255, cv2.THRESH_BINARY)[1][:, :, 0].astype(np.uint8)
+    img = img.astype(np.uint8)
+    result = cv2.inpaint(img, mask, 10, cv2.INPAINT_NS).astype(np.float32)
+    return result
+
+
+def mean_scale(img):
+    '''
+    Scale the image according to its mean and standard deviation
+    :param img: Numpy array of image
+    :return:
+    '''
+    return ((img - np.mean(img)) / np.std(img)).astype(np.float32)
+
+
+def transform_img(img):
+    '''
+    Apply custom transformation to a single image
+    :param img: Numpy array of image
+    :return:
+    '''
+    img = remove_text(img)
+    img = mean_scale(img)
+    return img
 
 
 def remove_text(img):

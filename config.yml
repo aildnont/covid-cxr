@@ -19,31 +19,32 @@ DATA:
   VAL_SPLIT: 0.08
   TEST_SPLIT: 0.1
   KAGGLE_DATA_FRAC: 0.2
-  DATASET_SIZE: 1000
-  CLASSES: ['normal', 'COVID-19', 'other_pneumonia']
+  NUM_RSNA_IMGS: 907
+  #CLASSES: ['normal', 'COVID-19', 'other_pneumonia']
+  CLASSES: ['normal', 'COVID-19']
 
 TRAIN:
   EXPERIMENT_TYPE: 'single_train'
   BATCH_SIZE: 16
-  EPOCHS: 40
+  EPOCHS: 100
   THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
-  PATIENCE: 5
+  PATIENCE: 7
   IMB_STRATEGY: 'class_weight'  # One of {'class_weight', 'random_oversample'}
   CLASS_MODE: 'binary'          # One of {'binary', 'multiclass'}
-  CLASS_MULTIPLIER: [1.0, 1.0, 1.0]    # For multi-class classification
+  CLASS_MULTIPLIER: [0.15, 1.0]
 
 NN:
   DCNN_BINARY:
     KERNEL_SIZE: (3,3)
     STRIDES: (1,1)
-    INIT_FILTERS: 32
-    FILTER_EXP_BASE: 2
+    INIT_FILTERS: 16
+    FILTER_EXP_BASE: 3
     MAXPOOL_SIZE: (2,2)
-    CONV_BLOCKS: 4
+    CONV_BLOCKS: 3
     NODES_DENSE0: 128
     LR: 0.0001
-    DROPOUT: 0.3
-    L2_LAMBDA: 0.0003
+    DROPOUT: 0.45
+    L2_LAMBDA: 0.0001
   DCNN_MULTICLASS:
     KERNEL_SIZE: (3,3)
     STRIDES: (1,1)
