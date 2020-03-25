@@ -30,7 +30,7 @@ TRAIN:
   THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
   PATIENCE: 7
   IMB_STRATEGY: 'class_weight'          # One of {'class_weight', 'random_oversample'}
-  CLASS_MODE: 'multiclass'              # One of {'binary', 'multiclass'}
+  CLASS_MODE: 'binary'              # One of {'binary', 'multiclass'}
   #CLASS_MULTIPLIER:                    # Class multiplier for binary classification
   CLASS_MULTIPLIER: [0.15, 1.0, 0.15]   # Class multiplier for multiclass classification (3 classes)
 

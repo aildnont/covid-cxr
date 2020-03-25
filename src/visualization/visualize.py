@@ -63,18 +63,16 @@ def plot_roc(name, labels, predictions, class_id=1, dir_path=None):
     :param dir_path: Directory in which to save image
     '''
     plt.clf()
-    if True:
-    #if np.max(labels) > 1:
-        single_class_preds = predictions[:, class_id]    # Only care about one class
-        single_class_labels = (np.array(labels) == class_id) * 1.0
-        predictions = single_class_preds
-        labels = single_class_labels
+    single_class_preds = predictions[:, class_id]    # Only care about one class
+    single_class_labels = (np.array(labels) == class_id) * 1.0
+    predictions = single_class_preds
+    labels = single_class_labels
     fp, tp, _ = roc_curve(labels, predictions)  # Get values for true positive and true negative
     plt.plot(100*fp, 100*tp, label=name, linewidth=2)   # Plot the ROC curve
     plt.xlabel('False positives [%]')
     plt.ylabel('True positives [%]')
-    plt.xlim([-0.5,20])
-    plt.ylim([80,100.5])
+    plt.xlim([-5,105])
+    plt.ylim([-5,105])
     plt.grid(True)
     ax = plt.gca()
     ax.set_aspect('equal')
@@ -82,22 +80,20 @@ def plot_roc(name, labels, predictions, class_id=1, dir_path=None):
         plt.savefig(dir_path + 'ROC_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png')
     return plot_to_tensor()
 
-def plot_confusion_matrix(labels, predictions, class_id=1, p=0.5, dir_path=None):
+def plot_confusion_matrix(labels, predictions, class_id=1, dir_path=None):
     '''
-    Plot a confusion matrix for the ground truth labels and corresponding model predictions.
+    Plot a confusion matrix for the ground truth labels and corresponding model predictions for a particular class.
     :param labels: Ground truth labels
     :param predictions: Model predictions
     :param class_id: Index of class to consider
-    :param p: Classification threshold
     :param dir_path: Directory in which to save image
     '''
     plt.clf()
-    if np.max(labels) > 1:
-        p = 1.0 / np.unique(labels).shape[0]
-        single_class_preds = predictions[:, class_id]    # Only care about one class
-        single_class_labels = (np.array(labels) == class_id) * 1.0
-        predictions = single_class_preds
-        labels = single_class_labels
+    p = 1.0 / np.unique(labels).shape[0]
+    single_class_preds = predictions[:, class_id]    # Only care about one class
+    single_class_labels = (np.array(labels) == class_id) * 1.0
+    predictions = single_class_preds
+    labels = single_class_labels
     ax = plt.subplot()
     cm = confusion_matrix(labels, predictions > p)  # Calculate confusion matrix
     im = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)  # Plot confusion matrix
