@@ -63,7 +63,8 @@ def plot_roc(name, labels, predictions, class_id=1, dir_path=None):
     :param dir_path: Directory in which to save image
     '''
     plt.clf()
-    if np.max(labels) > 1:
+    if True:
+    #if np.max(labels) > 1:
         single_class_preds = predictions[:, class_id]    # Only care about one class
         single_class_labels = (np.array(labels) == class_id) * 1.0
         predictions = single_class_preds
@@ -145,6 +146,7 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, cla
     # Plot the image and its explanation on the right
     if label_to_see == 'top':
         label_to_see = explanation.top_labels[0]
+    explanation.image = orig_img
     temp, mask = explanation.get_image_and_mask(label_to_see, positive_only=False, num_features=10,
                                                 hide_rest=False)
     ax[1].imshow(mark_boundaries(temp, mask))

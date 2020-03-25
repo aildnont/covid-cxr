@@ -108,7 +108,7 @@ def dcnn_multiclass(model_config, input_shape, num_classes, metrics):
     return model
 
 
-def dcnn_binary_resnet(model_config, input_shape, metrics, output_bias=None):
+def dcnn_resnet(model_config, input_shape, metrics, n_classes=2, output_bias=None):
     '''
     Defines a deep convolutional neural network model for multiclass X-ray classification.
     :param model_config: A dictionary of parameters associated with the model architecture
@@ -155,10 +155,10 @@ def dcnn_binary_resnet(model_config, input_shape, metrics, output_bias=None):
     X = Dropout(dropout)(X)
     X = Dense(nodes_dense0, kernel_initializer='he_uniform', activity_regularizer=l2(l2_lambda))(X)
     X = LeakyReLU()(X)
-    Y = Dense(1, activation='sigmoid', bias_initializer=output_bias, name='output')(X)
+    Y = Dense(n_classes, activation='softmax', bias_initializer=output_bias, name='output')(X)
 
     # Set model loss function, optimizer, metrics.
     model = Model(inputs=X_input, outputs=Y)
-    model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=metrics)
+    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=metrics)
     model.summary()
     return model

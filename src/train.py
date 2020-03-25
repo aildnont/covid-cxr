@@ -13,7 +13,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from src.models.models import *
 from src.visualization.visualize import *
 from src.custom.metrics import F1Score
-from src.data.preprocess import remove_text
+from src.data.preprocess import *
 
 def get_class_weights(histogram, class_multiplier=None):
     '''
@@ -63,18 +63,17 @@ def train_model(cfg, data, callbacks, verbose=1):
         data['TRAIN'] = random_minority_oversample(data['TRAIN'])
 
     # Create ImageDataGenerators
-    train_img_gen = ImageDataGenerator(rescale=1.0/255.0, rotation_range=10, preprocessing_function=remove_text)
-    val_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
-    test_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
+    train_img_gen = ImageDataGenerator(rotation_range=10, preprocessing_function=remove_text,
+                                       samplewise_std_normalization=True, samplewise_center=True)
+    val_img_gen = ImageDataGenerator(preprocessing_function=remove_text,
+                                       samplewise_std_normalization=True, samplewise_center=True)
+    test_img_gen = ImageDataGenerator(preprocessing_function=remove_text,
+                                       samplewise_std_normalization=True, samplewise_center=True)
 
     # Create DataFrameIterators
     img_shape = tuple(cfg['DATA']['IMG_DIM'])
-    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
-        y_col = 'label'
-        class_mode = 'raw'
-    else:
-        y_col = 'label_str'
-        class_mode = 'categorical'
+    y_col = 'label_str'
+    class_mode = 'categorical'
     train_generator = train_img_gen.flow_from_dataframe(dataframe=data['TRAIN'], directory=cfg['PATHS']['TRAIN_IMGS'],
         x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode)
     val_generator = val_img_gen.flow_from_dataframe(dataframe=data['VAL'], directory=cfg['PATHS']['VAL_IMGS'],
@@ -86,29 +85,20 @@ def train_model(cfg, data, callbacks, verbose=1):
     # Apply class imbalance strategy. We have many more X-rays negative for COVID-19 than positive.
     if cfg['TRAIN']['IMB_STRATEGY'] == 'class_weight':
         class_multiplier = cfg['TRAIN']['CLASS_MULTIPLIER']
-        if cfg['TRAIN']['CLASS_MODE'] == 'binary':
-            histogram = np.bincount(data['TRAIN']['label'].astype(int))
-        else:
-            histogram = np.bincount(np.array(train_generator.labels).astype(int))   # Get class distribution
+        histogram = np.bincount(np.array(train_generator.labels).astype(int))   # Get class distribution
+        class_multiplier = [class_multiplier[cfg['DATA']['CLASSES'].index(c)] for c in test_generator.class_indices]
         class_weight = get_class_weights(histogram, class_multiplier)
 
     # Define metrics.
     thresholds = cfg['TRAIN']['THRESHOLDS']     # Load classification thresholds
-    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
-        metrics = ['accuracy', BinaryAccuracy(name='accuracy'),
-                   Precision(name='precision', thresholds=thresholds),
-                   Recall(name='recall', thresholds=thresholds),
-                   AUC(name='auc'),
-                   F1Score(name='f1score', thresholds=thresholds)]
-    else:
-        covid_class_idx = test_generator.class_indices['COVID-19']   # Get index of COVID-19 class
-        thresholds = 1.0 / len(cfg['DATA']['CLASSES'])      # Binary classification threshold of predicted class
-        # Binary metrics (precision, recall, F1 Score) only computed for COVID-19 class
-        metrics = ['accuracy', CategoricalAccuracy(name='accuracy'),
-                   Precision(name='precision', thresholds=thresholds, class_id=covid_class_idx),
-                   Recall(name='recall', thresholds=thresholds, class_id=covid_class_idx),
-                   AUC(name='auc'),
-                   F1Score(name='f1score', thresholds=thresholds, class_id=covid_class_idx)]
+    covid_class_idx = test_generator.class_indices['COVID-19']   # Get index of COVID-19 class
+    thresholds = 1.0 / len(cfg['DATA']['CLASSES'])      # Binary classification threshold of predicted class
+    # Binary metrics (precision, recall, F1 Score) only computed for COVID-19 class
+    metrics = ['accuracy', CategoricalAccuracy(name='accuracy'),
+               Precision(name='precision', thresholds=thresholds, class_id=covid_class_idx),
+               Recall(name='recall', thresholds=thresholds, class_id=covid_class_idx),
+               AUC(name='auc'),
+               F1Score(name='f1score', thresholds=thresholds, class_id=covid_class_idx)]
 
     # Define the model.
     print('Training distribution: ', ['Class ' + str(cfg['DATA']['CLASSES'][i]) + ': ' + str(histogram[i]) + '. '
@@ -116,12 +106,13 @@ def train_model(cfg, data, callbacks, verbose=1):
     input_shape = cfg['DATA']['IMG_DIM'] + [3]
     if cfg['TRAIN']['CLASS_MODE'] == 'binary':
         histogram = np.bincount(data['TRAIN']['label'].astype(int))
-        output_bias = np.log([histogram[1] / histogram[0]])
-        model = dcnn_binary_resnet(cfg['NN']['DCNN_BINARY'], input_shape, metrics, output_bias=output_bias)
+        output_bias = np.log([histogram[i] / (np.sum(histogram) - histogram[i]) for i in range(histogram.shape[0])])
+        model = dcnn_resnet(cfg['NN']['DCNN_BINARY'], input_shape, metrics, 2, output_bias=output_bias)
     else:
         n_classes = len(cfg['DATA']['CLASSES'])
-        model = dcnn_multiclass(cfg['NN']['DCNN_MULTICLASS'], input_shape, n_classes, metrics)
-
+        histogram = np.bincount(data['TRAIN']['label'].astype(int))
+        output_bias = np.log([histogram[i] / (np.sum(histogram) - histogram[i]) for i in range(histogram.shape[0])])
+        model = dcnn_resnet(cfg['NN']['DCNN_MULTICLASS'], input_shape, metrics, n_classes, output_bias=output_bias)
 
     # Train the model.
     steps_per_epoch = ceil(train_generator.n / train_generator.batch_size)
@@ -176,10 +167,7 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
     # Visualization of test results
     test_predictions = model.predict_generator(test_generator, verbose=0)
     test_labels = test_generator.labels
-    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
-        covid_idx = 1
-    else:
-        covid_idx = test_generator.class_indices['COVID-19']
+    covid_idx = test_generator.class_indices['COVID-19']
     roc_img = plot_roc("Test set", test_labels, test_predictions, class_id=covid_idx, dir_path=None)
     cm_img = plot_confusion_matrix(test_labels, test_predictions, class_id=covid_idx, dir_path=None)
 
@@ -205,7 +193,7 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
             for key in cfg['NN']['DCNN_BINARY']:
                 hparam_summary_str.append([key, str(cfg['NN']['DCNN_BINARY'][key])])
         else:
-            for key in cfg['NN']['DCNN_MULTICLASS']:
+            for key in cfg['NN']['DCNN_BINARY']:
                 hparam_summary_str.append([key, str(cfg['NN']['DCNN_BINARY'][key])])
 
         # Write to TensorBoard logs

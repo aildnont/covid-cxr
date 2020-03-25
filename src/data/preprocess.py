@@ -48,6 +48,10 @@ def build_dataset(cfg):
             cv2.imwrite(os.path.join(other_data_path + filename + '.jpg'), pixel_arr)
 
     mode = cfg['TRAIN']['CLASS_MODE']
+    n_classes = len(cfg['DATA']['CLASSES'])
+    class_dict = {cfg['DATA']['CLASSES'][i]: i for i in range(n_classes)}  # Map class name to number
+    label_dict = {i: cfg['DATA']['CLASSES'][i] for i in range(n_classes)}  # Map class name to number
+
     if mode == 'binary':
         PA_covid_df = covid_df[covid_patients_df & covid_PA_cxrs_df]      # PA images diagnosed COVID
         PA_covid_df['label'] = 1
@@ -62,9 +66,6 @@ def build_dataset(cfg):
 
         file_df = pd.concat([file_df, rsna_file_df], axis=0)         # Combine both datasets
     else:
-        n_classes = len(cfg['DATA']['CLASSES'])
-        class_dict = {cfg['DATA']['CLASSES'][i]: i for i in range(n_classes)} # Map class name to number
-        label_dict = {i: cfg['DATA']['CLASSES'][i] for i in range(n_classes)} # Map class name to number
         PA_covid_df = covid_df[covid_patients_df & covid_PA_cxrs_df]  # PA images diagnosed COVID
         PA_covid_df['label'] = class_dict['COVID-19']
         PA_pneum_df = covid_df[covid_df['finding'].isin(['SARS', 'Steptococcus']) & covid_PA_cxrs_df]   # PA images diagnosed with SARS
@@ -80,8 +81,8 @@ def build_dataset(cfg):
         rsna_file_df = pd.concat([rsna_normal_file_df, rsna_pneum_file_df], axis=0)
 
         file_df = pd.concat([file_df, rsna_file_df], axis=0)  # Combine both datasets
-        file_df['label_str'] = file_df['label'].map(label_dict) # Add column for string representation of label
 
+    file_df['label_str'] = file_df['label'].map(label_dict) # Add column for string representation of label
     return file_df
 
 
