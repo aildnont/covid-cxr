@@ -32,20 +32,42 @@ def build_dataset(cfg):
     rsna_metadata_path = other_data_path + 'stage_2_train_labels.csv'
     rsna_df = pd.read_csv(rsna_metadata_path)
     num_rsna_imgs = cfg['DATA']['NUM_RSNA_IMGS']
-    rsna_normal_df = rsna_df[rsna_df['Target'] == 0][0:num_rsna_imgs//2]
-    rsna_pneum_df = rsna_df[rsna_df['Target'] == 1][0:num_rsna_imgs//2]
+    rsna_normal_df = rsna_df[rsna_df['Target'] == 0]
+    rsna_pneum_df = rsna_df[rsna_df['Target'] == 1]
 
-    # Convert dicom files to jpg if not done already in a previous run
-    for filename in tqdm(rsna_normal_df['patientId'].tolist()):
+    # Convert dicom files of CXRs with no findings to jpg if not done already in a previous run. Select only PA views.
+    pa_file_counter = 0
+    pa_normal_idxs = []
+    #for filename in rsna_normal_df['patientId'].tolist():
+    for df_idx in rsna_normal_df.index.values.tolist():
+        filename = rsna_normal_df.loc[df_idx]['patientId']
         if not os.path.exists(other_data_path + filename + '.jpg'):
             ds = dicom.dcmread(os.path.join(other_data_path + 'stage_2_train_images/' + filename + '.dcm'))
-            pixel_arr = ds.pixel_array
-            cv2.imwrite(os.path.join(other_data_path + filename + '.jpg'), pixel_arr)
-    for filename in tqdm(rsna_pneum_df['patientId'].tolist()):
+            if ds.SeriesDescription.split(' ')[1] == 'PA':
+                pixel_arr = ds.pixel_array
+                cv2.imwrite(os.path.join(other_data_path + filename + '.jpg'), pixel_arr)
+                pa_normal_idxs.append(df_idx)
+                pa_file_counter += 1
+            if pa_file_counter >= num_rsna_imgs // 2:
+                break
+    rsna_normal_df = rsna_normal_df.loc[pa_normal_idxs]
+
+    # Convert dicom files of CXRs with pneumonia to jpg if not done already in a previous run. Select only PA views.
+    pa_file_counter = 0
+    pa_pneum_idxs = []
+    num_remaining = num_rsna_imgs - num_rsna_imgs // 2
+    for df_idx in rsna_pneum_df.index.values.tolist():
+        filename = rsna_pneum_df.loc[df_idx]['patientId']
         if not os.path.exists(other_data_path + filename + '.jpg'):
             ds = dicom.dcmread(os.path.join(other_data_path + 'stage_2_train_images/' + filename + '.dcm'))
-            pixel_arr = ds.pixel_array
-            cv2.imwrite(os.path.join(other_data_path + filename + '.jpg'), pixel_arr)
+            if ds.SeriesDescription.split(' ')[1] == 'PA':
+                pixel_arr = ds.pixel_array
+                cv2.imwrite(os.path.join(other_data_path + filename + '.jpg'), pixel_arr)
+                pa_pneum_idxs.append(df_idx)
+                pa_file_counter += 1
+            if pa_file_counter >= num_remaining:
+                break
+    rsna_pneum_df = rsna_pneum_df.loc[pa_pneum_idxs]
 
     mode = cfg['TRAIN']['CLASS_MODE']
     n_classes = len(cfg['DATA']['CLASSES'])

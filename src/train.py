@@ -90,10 +90,8 @@ def train_model(cfg, data, callbacks, verbose=1):
         class_weight = get_class_weights(histogram, class_multiplier)
 
     # Define metrics.
-    thresholds = cfg['TRAIN']['THRESHOLDS']     # Load classification thresholds
     covid_class_idx = test_generator.class_indices['COVID-19']   # Get index of COVID-19 class
-    thresholds = 1.0 / len(cfg['DATA']['CLASSES'])      # Binary classification threshold of predicted class
-    # Binary metrics (precision, recall, F1 Score) only computed for COVID-19 class
+    thresholds = 1.0 / len(cfg['DATA']['CLASSES'])      # Binary classification threshold for a class
     metrics = ['accuracy', CategoricalAccuracy(name='accuracy'),
                Precision(name='precision', thresholds=thresholds, class_id=covid_class_idx),
                Recall(name='recall', thresholds=thresholds, class_id=covid_class_idx),
@@ -101,7 +99,7 @@ def train_model(cfg, data, callbacks, verbose=1):
                F1Score(name='f1score', thresholds=thresholds, class_id=covid_class_idx)]
 
     # Define the model.
-    print('Training distribution: ', ['Class ' + str(cfg['DATA']['CLASSES'][i]) + ': ' + str(histogram[i]) + '. '
+    print('Training distribution: ', ['Class ' + list(test_generator.class_indices.keys())[i] + ': ' + str(histogram[i]) + '. '
            for i in range(len(histogram))])
     input_shape = cfg['DATA']['IMG_DIM'] + [3]
     if cfg['TRAIN']['CLASS_MODE'] == 'binary':
