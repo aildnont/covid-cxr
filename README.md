@@ -350,5 +350,5 @@ Manager, Artificial Intelligence
 Information Technology Services, City Manager’s Office  
 City of London  
 201 Queens Ave. Suite 300, London, ON. N6A 1J1  
-P: 519.661.CITY (2489) x 5451 | C: 226.448.9113
+P: 519.661.CITY (2489) x 5451 | C: 226.448.9113  
 maross@london.ca
