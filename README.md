@@ -90,14 +90,12 @@ global effort of identifying and treating cases of COVID-19.
    training and validation sets, and performance on the test set. The
    logs can be visualized by running
    [TensorBoard](https://www.tensorflow.org/tensorboard) locally. See
-   below for examples of plots from a TensorBoard log file depicting
-   loss on the training and validation sets vs. epoch. Plots depicting
-   the change in performance metrics throughout the training process
-   (such as the example below) are available in the _SCALARS_ tab of
-   TensorBoard.  
+   below for an example of a plot from a TensorBoard log file depicting
+   loss on the training and validation sets versus epoch. Plots
+   depicting the change in performance metrics throughout the training
+   process (such as the example below) are available in the _SCALARS_
+   tab of TensorBoard.  
    ![alt text](documents/readme_images/tensorboard_loss.png "Loss vs
-   Epoch")  
-   ![alt text](documents/readme_images/tensorboard_auc.png "AUC vs
    Epoch")  
    You can also visualize the trained model's performance on the test
    set. See below for an example of the ROC Curve and Confusion Matrix
@@ -187,6 +185,14 @@ feedback on the model based on their assessment of the quality of these
 explanations. If the explanations make sense to individuals with
 extensive experience interpreting X-rays, perhaps certain patterns can
 be identified as radiological signatures of COVID-19.
+
+Below are examples of LIME explanations. The top two images are
+explanations of a couple of the binary classifier's predictions. Green
+regions and red regions identify superpixels that most contributed to
+and against prediction of COVID-19 respectively. The bottom two images
+are explanations of a couple of the multi-class classifier's
+predictions. Green regions and red regions identify superpixels that
+most contributed to and against the predicted class respectively.
 
 ![alt text](documents/readme_images/LIME_example0.PNG "Sample LIME
 explanation #1")  
