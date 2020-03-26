@@ -1,5 +1,4 @@
 # COVID-19 Chest X-Ray Model
-![alt text](documents/readme_images/london_logo.png "City of London logo")
 
 The goals of this project are threefold: (1) to initially develop a machine learning
 algorithm to distinguish chest X-rays of individuals with respiratory
