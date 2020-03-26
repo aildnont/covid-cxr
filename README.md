@@ -6,9 +6,12 @@ illness testing positive for COVID-19 from other X-rays, (2) to
 promote discovery of patterns in such X-rays via machine learning
 interpretability algorithms, and (3) to build more robust and extensible machine learning infrastructure trained on a variety of data types, to aid in the clobal response to COVID-19. 
 
-We are calling on all machine learning
-practitioners and healthcare professionals who can contribute their expertise
-to this effort. If you are interested in getting involved in this project by lending your expertise, [sign up here](https://forms.gle/6Qo34h4DsUrRJNVR9), otherwise, feel free to experiment with the code base in this repo.
+We are calling on all machine learning practitioners and healthcare
+professionals who can contribute their expertise to this effort. If you
+are interested in getting involved in this project by lending your
+expertise, please reach out to us ([contact info](#contact) is at the bottom
+of this page); otherwise, feel free to experiment with the code base in
+this repo.
 
 A model has been trained on a dataset composed of X-rays
 labeled positive for COVID-19 infection, normal X-rays, and X-rays
