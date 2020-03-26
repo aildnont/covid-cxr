@@ -1,10 +1,10 @@
 # COVID-19 Chest X-Ray Model
 
-The goals of this project are threefold: (1) to initially develop a machine learning
+The goals of this project are threefold: (1) to explore development of a machine learning
 algorithm to distinguish chest X-rays of individuals with respiratory
 illness testing positive for COVID-19 from other X-rays, (2) to
 promote discovery of patterns in such X-rays via machine learning
-interpretability algorithms, and (3) to build more robust and extensible machine learning infrastructure trained on a variety of data types, to aid in the clobal response to COVID-19. 
+interpretability algorithms, and (3) to build more robust and extensible machine learning infrastructure trained on a variety of data types, to aid in the global response to COVID-19. 
 
 We are calling on all machine learning practitioners and healthcare
 professionals who can contribute their expertise to this effort. If you
@@ -21,7 +21,7 @@ Model-Agnostic Explanations](https://arxiv.org/pdf/1602.04938.pdf) (i.e.
 LIME) as the interpretability method being applied to the model. This
 project is in need of more expertise and more data. Please consider
 contributing or reaching out to us if you are able to lend a hand by signing up at the above link. This
-project is in its infancy. The immediacy of this work cannot be
+project is in its infancy and not a tool for medical diagnosis. The immediacy of this work cannot be
 overstated, as any insights derived from this project may be of benefit
 to healthcare practitioners and researchers as the COVID-19 pandemic
 continues to evolve.
@@ -347,8 +347,9 @@ below.
 ## Contact
 **Matt Ross**  
 Manager, Artificial Intelligence  
-Information Technology Services, City Manager’s Office  
-City of London  
+Information Technology Services, 
+City Manager’s Office  
+The Corporation of the City of London  
 201 Queens Ave. Suite 300, London, ON. N6A 1J1  
 P: 519.661.CITY (2489) x 5451 | C: 226.448.9113  
 maross@london.ca
