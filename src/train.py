@@ -13,7 +13,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from src.models.models import *
 from src.visualization.visualize import *
 from src.custom.metrics import F1Score
-from src.data.preprocess import *
+from src.data.preprocess import remove_text
 
 def get_class_weights(histogram, class_multiplier=None):
     '''
@@ -59,6 +59,7 @@ def train_model(cfg, data, callbacks, verbose=1):
     :return: Trained model and associated performance metrics on the test set
     '''
 
+    # If set in config file, oversample the minority class
     if cfg['TRAIN']['IMB_STRATEGY'] == 'random_oversample':
         data['TRAIN'] = random_minority_oversample(data['TRAIN'])
 

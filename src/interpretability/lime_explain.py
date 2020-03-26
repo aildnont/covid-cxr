@@ -78,19 +78,12 @@ def setup_lime():
     lime_dict['TEST_SET'] = pd.read_csv(cfg['PATHS']['TEST_SET'])
 
     # Create ImageDataGenerator for test set
-    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
-        y_col = 'label'
-        class_mode = 'raw'
-    else:
-        y_col = 'label_str'
-        class_mode = 'categorical'
     test_img_gen = ImageDataGenerator(preprocessing_function=remove_text,
                                        samplewise_std_normalization=True, samplewise_center=True)
     test_generator = test_img_gen.flow_from_dataframe(dataframe=lime_dict['TEST_SET'], directory=cfg['PATHS']['TEST_IMGS'],
-        x_col="filename", y_col=y_col, target_size=tuple(cfg['DATA']['IMG_DIM']), batch_size=1,
-        class_mode=class_mode, shuffle=False)
+        x_col="filename", y_col='label_str', target_size=tuple(cfg['DATA']['IMG_DIM']), batch_size=1,
+        class_mode='categorical', shuffle=False)
     lime_dict['TEST_GENERATOR'] = test_generator
-    #lime_dict['CLASSES'] = list(test_generator.class_indices.keys())
 
     # Define the LIME explainer
     lime_dict['EXPLAINER'] = LimeImageExplainer(kernel_width=KERNEL_WIDTH, feature_selection=FEATURE_SELECTION,
@@ -122,7 +115,6 @@ def explain_xray(lime_dict, idx, save_exp=True):
     orig_img = cv2.imread(lime_dict['TEST_IMG_PATH'] + lime_dict['TEST_SET']['filename'][idx])
     new_dim = tuple(lime_dict['IMG_DIM'])
     orig_img = cv2.resize(orig_img, new_dim, interpolation=cv2.INTER_NEAREST)     # Resize image
-    #x = orig_img
 
     # Algorithm for superpixel segmentation. Parameters set to limit size of superpixels and promote border smoothness
     segmentation_fn = SegmentationAlgorithm('quickshift', kernel_size=2.25, max_dist=50, ratio=0.1, sigma=0.15)
@@ -146,8 +138,8 @@ def explain_xray(lime_dict, idx, save_exp=True):
         file_path = lime_dict['IMG_PATH']
     else:
         file_path = None
-    if lime_dict['CLASS_MODE'] == 'multiclass' and lime_dict['COVID_ONLY'] == True:
-        label_to_see = lime_dict['CLASSES'].index('COVID-19')    # See COVID-19 class explanation
+    if lime_dict['COVID_ONLY'] == True:
+        label_to_see = lime_dict['TEST_GENERATOR'].class_indices['COVID-19']
     else:
         label_to_see = 'top'
     visualize_explanation(orig_img, explanation, img_filename, label, probs, lime_dict['CLASSES'], label_to_see=label_to_see,
@@ -157,5 +149,5 @@ def explain_xray(lime_dict, idx, save_exp=True):
 
 if __name__ == '__main__':
     lime_dict = setup_lime()
-    i = 11                                                       # Select i'th image in test set
+    i = 0                                                       # Select i'th image in test set
     explain_xray(lime_dict, i, save_exp=True)                   # Generate explanation for image

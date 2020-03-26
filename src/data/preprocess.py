@@ -38,7 +38,6 @@ def build_dataset(cfg):
     # Convert dicom files of CXRs with no findings to jpg if not done already in a previous run. Select only PA views.
     pa_file_counter = 0
     pa_normal_idxs = []
-    #for filename in rsna_normal_df['patientId'].tolist():
     for df_idx in rsna_normal_df.index.values.tolist():
         filename = rsna_normal_df.loc[df_idx]['patientId']
         if not os.path.exists(other_data_path + filename + '.jpg'):
@@ -106,39 +105,6 @@ def build_dataset(cfg):
 
     file_df['label_str'] = file_df['label'].map(label_dict) # Add column for string representation of label
     return file_df
-
-
-def remove_text(img):
-    '''
-    Attempts to remove textual artifacts from X-ray images. For example, many images indicate the right side of the
-    body with a white 'R'. Works only for very bright text.
-    :param img: Numpy array of image
-    :return: Array of image with (ideally) any characters removed and inpainted
-    '''
-    mask = cv2.threshold(img, 230, 255, cv2.THRESH_BINARY)[1][:, :, 0].astype(np.uint8)
-    img = img.astype(np.uint8)
-    result = cv2.inpaint(img, mask, 10, cv2.INPAINT_NS).astype(np.float32)
-    return result
-
-
-def mean_scale(img):
-    '''
-    Scale the image according to its mean and standard deviation
-    :param img: Numpy array of image
-    :return:
-    '''
-    return ((img - np.mean(img)) / np.std(img)).astype(np.float32)
-
-
-def transform_img(img):
-    '''
-    Apply custom transformation to a single image
-    :param img: Numpy array of image
-    :return:
-    '''
-    img = remove_text(img)
-    img = mean_scale(img)
-    return img
 
 
 def remove_text(img):

@@ -1,6 +1,6 @@
 PATHS:
   RAW_COVID_DATA: 'D:/Documents/Work/covid-cxr/data/covid-chestxray-dataset/'   # Path of extracted COVID dataset https://github.com/ieee8023/covid-chestxray-dataset
-  RAW_OTHER_DATA: 'D:/Documents/Work/covid-cxr/data/rsna/'                       # Path of extracted NIH dataset https://nihcc.app.box.com/v/ChestXray-NIHCC
+  RAW_OTHER_DATA: 'D:/Documents/Work/covid-cxr/data/rsna/'                      # Path of extracted NIH dataset https://www.kaggle.com/c/rsna-pneumonia-detection-challenge
   PROCESSED_DATA: 'data/processed/'
   TRAIN_IMGS: 'data/processed/train/'
   VAL_IMGS: 'data/processed/val/'
@@ -20,19 +20,19 @@ DATA:
   TEST_SPLIT: 0.1
   KAGGLE_DATA_FRAC: 0.2
   NUM_RSNA_IMGS: 907
-  #CLASSES: ['non-COVID-19', 'COVID-19']                # Classes for binary classification
-  CLASSES: ['normal', 'COVID-19', 'other_pneumonia']    # Classes for multiclass classification (3 classes)
+  CLASSES: ['non-COVID-19', 'COVID-19']                   # Classes for binary classification
+  #CLASSES: ['normal', 'COVID-19', 'other_pneumonia']     # Classes for multiclass classification (3 classes)
 
 TRAIN:
+  CLASS_MODE: 'binary'                                    # One of {'binary', 'multiclass'}
   EXPERIMENT_TYPE: 'single_train'
   BATCH_SIZE: 16
-  EPOCHS: 150
-  THRESHOLDS: 0.5   # Can be changed to list of values in range [0, 1]
+  EPOCHS: 200
+  THRESHOLDS: 0.5                                         # Can be changed to list of values in range [0, 1]
   PATIENCE: 7
-  IMB_STRATEGY: 'class_weight'          # One of {'class_weight', 'random_oversample'}
-  CLASS_MODE: 'multiclass'              # One of {'binary', 'multiclass'}
-  #CLASS_MULTIPLIER: [0.15, 1.0]                   # Class multiplier for binary classification
-  CLASS_MULTIPLIER: [0.9, 1.0, 0.9]            # Class multiplier for multiclass classification (3 classes)
+  IMB_STRATEGY: 'class_weight'                            # One of {'class_weight', 'random_oversample'}
+  CLASS_MULTIPLIER: [0.15, 1.0]                           # Class multiplier for binary classification
+  #CLASS_MULTIPLIER: [0.4, 1.0, 0.4]                      # Class multiplier for multiclass classification (3 classes)
 
 NN:
   DCNN_BINARY:
@@ -52,9 +52,9 @@ NN:
     INIT_FILTERS: 16
     FILTER_EXP_BASE: 3
     MAXPOOL_SIZE: (2,2)
-    CONV_BLOCKS: 3
+    CONV_BLOCKS: 4
     NODES_DENSE0: 128
-    LR: 0.0003
+    LR: 0.0002
     DROPOUT: 0.40
     L2_LAMBDA: 0.0001
 
