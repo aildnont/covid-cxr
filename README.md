@@ -1,23 +1,27 @@
 # COVID-19 Chest X-Ray Model
 ![alt text](documents/readme_images/london_logo.png "City of London logo")
 
-The goals of this project are twofold: (1) to develop a machine learning
+The goals of this project are threefold: (1) to initially develop a machine learning
 algorithm to distinguish chest X-rays of individuals with respiratory
-illness testing positive for COVID-19 from other X-rays, and (2) to
+illness testing positive for COVID-19 from other X-rays, (2) to
 promote discovery of patterns in such X-rays via machine learning
-interpretability algorithms. We are calling all machine learning
-practitioners and healthcare professionals to contribute their expertise
-to this effort. A model has been trained on a dataset composed of X-rays
+interpretability algorithms, and (3) to build more robust and extensible machine learning infrastructure trained on a variety of data types, to aid in the clobal response to COVID-19. 
+
+We are calling on all machine learning
+practitioners and healthcare professionals who can contribute their expertise
+to this effort. If you are interested in getting involved in this project by lending your expertise, [sign up here](https://forms.gle/6Qo34h4DsUrRJNVR9), otherwise, feel free to experiment with the code base in this repo.
+
+A model has been trained on a dataset composed of X-rays
 labeled positive for COVID-19 infection, normal X-rays, and X-rays
 depicting bacterial and viral pneumonias. Currently, we are using
 [Local Interpretable
 Model-Agnostic Explanations](https://arxiv.org/pdf/1602.04938.pdf) (i.e.
 LIME) as the interpretability method being applied to the model. This
-project is in need of more expertise and data. Please consider
-contributing or reaching out to us if you are able to lend a hand. This
+project is in need of more expertise and more data. Please consider
+contributing or reaching out to us if you are able to lend a hand by signing up at the above link. This
 project is in its infancy. The immediacy of this work cannot be
 overstated, as any insights derived from this project may be of benefit
-to healthcare practitioners and researchers as the COVID-19 situation
+to healthcare practitioners and researchers as the COVID-19 pandemic
 continues to evolve.
 
 ## Why X-rays?
@@ -30,7 +34,7 @@ X-rays are inexpensive and quick to perform; therefore, they are more
 accessible to healthcare providers working in smaller and/or remote
 regions. Any insights that may be derived as a result of explainability
 algorithms applied to a successful model will be invaluable to the
-global effort of identifying and treating cases of COVID-19.
+global effort of identifying and treating cases of COVID-19. This model is a prototype system and not for medical use and does not offer a diagnosis. 
 
 ## Getting Started
 1. Clone this repository (for help see this
