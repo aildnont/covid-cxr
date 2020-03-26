@@ -1,12 +1,12 @@
 import pandas as pd
 import yaml
 import os
-import tensorflow as tf
+import datetime
 import numpy as np
 from imblearn.over_sampling import RandomOverSampler
 from math import ceil
-import datetime
-from tensorflow.keras.metrics import BinaryAccuracy, Precision, Recall, AUC
+import tensorflow.summary as tf_summary
+from tensorflow.keras.metrics import BinaryAccuracy, CategoricalAccuracy, Precision, Recall, AUC
 from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ReduceLROnPlateau
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -28,7 +28,6 @@ def get_class_weights(histogram, class_multiplier=None):
     class_weight = {i: weights[i] for i in range(len(histogram))}
     if class_multiplier is not None:
         class_weight = [class_weight[i] * class_multiplier[i] for i in range(len(histogram))]
-    class_weight[0] *= 3
     print("Class weights: ", class_weight)
     return class_weight
 
@@ -39,50 +38,43 @@ def random_minority_oversample(train_set):
     :param train_set: Training set image file names and labels
     :return: A new training set containing oversampled examples
     '''
-    X_train = train_set['filename'].to_numpy()
+    X_train = train_set[[x for x in train_set.columns if x != 'label']].to_numpy()
+    if X_train.shape[1] == 1:
+        X_train = np.expand_dims(X_train, axis=-1)
     Y_train = train_set['label'].to_numpy()
     sampler = RandomOverSampler(random_state=np.random.randint(0, high=1000))
     X_resampled, Y_resampled = sampler.fit_resample(X_train, Y_train)
     print("Train set shape before oversampling: ", X_train.shape, " Train set shape after resampling: ", X_resampled.shape)
-    train_set_resampled = pd.DataFrame({'filename': X_resampled, 'label':Y_resampled})
+    train_set_resampled = pd.DataFrame({'filename': np.squeeze(X_resampled, axis=1), 'label':Y_resampled})
     return train_set_resampled
 
 
-def train_model(cfg, data, model, callbacks, verbose=1):
+def train_model(cfg, data, callbacks, verbose=1):
     '''
     Train a and evaluate model on given data.
     :param cfg: Project config (from config.yml)
     :param data: dict of partitioned dataset
-    :param model: Keras model to train
     :param callbacks: list of callbacks for Keras model
     :param verbose: Verbosity mode to pass to model.fit_generator()
     :return: Trained model and associated performance metrics on the test set
     '''
 
-    # Apply class imbalance strategy. We have many more X-rays negative for COVID-19 than positive.
-    histogram = np.bincount(data['TRAIN']['label'].astype(int))
-    class_weight = None
-    class_multiplier = None
-    if cfg['TRAIN']['CLASS_MODE'] == 'multiclass':
-        class_multiplier = cfg['TRAIN']['CLASS_MULTIPLIER']
-    if cfg['TRAIN']['IMB_STRATEGY'] == 'class_weight':
-        class_weight = get_class_weights(histogram, class_multiplier)
-    else:
+    # If set in config file, oversample the minority class
+    if cfg['TRAIN']['IMB_STRATEGY'] == 'random_oversample':
         data['TRAIN'] = random_minority_oversample(data['TRAIN'])
 
     # Create ImageDataGenerators
-    train_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
-    val_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
-    test_img_gen = ImageDataGenerator(rescale=1.0/255.0, preprocessing_function=remove_text)
+    train_img_gen = ImageDataGenerator(rotation_range=10, preprocessing_function=remove_text,
+                                       samplewise_std_normalization=True, samplewise_center=True)
+    val_img_gen = ImageDataGenerator(preprocessing_function=remove_text,
+                                       samplewise_std_normalization=True, samplewise_center=True)
+    test_img_gen = ImageDataGenerator(preprocessing_function=remove_text,
+                                       samplewise_std_normalization=True, samplewise_center=True)
 
     # Create DataFrameIterators
     img_shape = tuple(cfg['DATA']['IMG_DIM'])
-    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
-        y_col = 'label'
-        class_mode = 'raw'
-    else:
-        y_col = 'label_str'
-        class_mode = 'categorical'
+    y_col = 'label_str'
+    class_mode = 'categorical'
     train_generator = train_img_gen.flow_from_dataframe(dataframe=data['TRAIN'], directory=cfg['PATHS']['TRAIN_IMGS'],
         x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode)
     val_generator = val_img_gen.flow_from_dataframe(dataframe=data['VAL'], directory=cfg['PATHS']['VAL_IMGS'],
@@ -90,6 +82,36 @@ def train_model(cfg, data, model, callbacks, verbose=1):
     test_generator = test_img_gen.flow_from_dataframe(dataframe=data['TEST'], directory=cfg['PATHS']['TEST_IMGS'],
         x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode,
         shuffle=False)
+
+    # Apply class imbalance strategy. We have many more X-rays negative for COVID-19 than positive.
+    if cfg['TRAIN']['IMB_STRATEGY'] == 'class_weight':
+        class_multiplier = cfg['TRAIN']['CLASS_MULTIPLIER']
+        histogram = np.bincount(np.array(train_generator.labels).astype(int))   # Get class distribution
+        class_multiplier = [class_multiplier[cfg['DATA']['CLASSES'].index(c)] for c in test_generator.class_indices]
+        class_weight = get_class_weights(histogram, class_multiplier)
+
+    # Define metrics.
+    covid_class_idx = test_generator.class_indices['COVID-19']   # Get index of COVID-19 class
+    thresholds = 1.0 / len(cfg['DATA']['CLASSES'])      # Binary classification threshold for a class
+    metrics = ['accuracy', CategoricalAccuracy(name='accuracy'),
+               Precision(name='precision', thresholds=thresholds, class_id=covid_class_idx),
+               Recall(name='recall', thresholds=thresholds, class_id=covid_class_idx),
+               AUC(name='auc'),
+               F1Score(name='f1score', thresholds=thresholds, class_id=covid_class_idx)]
+
+    # Define the model.
+    print('Training distribution: ', ['Class ' + list(test_generator.class_indices.keys())[i] + ': ' + str(histogram[i]) + '. '
+           for i in range(len(histogram))])
+    input_shape = cfg['DATA']['IMG_DIM'] + [3]
+    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
+        histogram = np.bincount(data['TRAIN']['label'].astype(int))
+        output_bias = np.log([histogram[i] / (np.sum(histogram) - histogram[i]) for i in range(histogram.shape[0])])
+        model = dcnn_resnet(cfg['NN']['DCNN_BINARY'], input_shape, metrics, 2, output_bias=output_bias)
+    else:
+        n_classes = len(cfg['DATA']['CLASSES'])
+        histogram = np.bincount(data['TRAIN']['label'].astype(int))
+        output_bias = np.log([histogram[i] / (np.sum(histogram) - histogram[i]) for i in range(histogram.shape[0])])
+        model = dcnn_resnet(cfg['NN']['DCNN_MULTICLASS'], input_shape, metrics, n_classes, output_bias=output_bias)
 
     # Train the model.
     steps_per_epoch = ceil(train_generator.n / train_generator.batch_size)
@@ -128,61 +150,57 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
     data['VAL'] = pd.read_csv(cfg['PATHS']['VAL_SET'])
     data['TEST'] = pd.read_csv(cfg['PATHS']['TEST_SET'])
 
-    # Define metrics.
-    thresholds = cfg['TRAIN']['THRESHOLDS']     # Load classification thresholds
-    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
-        covid_class_id = None
-    else:
-        covid_class_id = 0
-    metrics = ['accuracy', BinaryAccuracy(name='accuracy'),
-               Precision(name='precision', thresholds=thresholds, class_id=covid_class_id),
-               Recall(name='recall', thresholds=thresholds, class_id=covid_class_id),
-               AUC(name='auc'),
-               F1Score(name='f1score', thresholds=thresholds, class_id=covid_class_id)]
-
     # Set callbacks.
     early_stopping = EarlyStopping(monitor='val_loss', verbose=1, patience=cfg['TRAIN']['PATIENCE'], mode='min', restore_best_weights=True)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, min_lr=0.00001, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=0.00001, verbose=1)
     callbacks = [early_stopping]
     if write_logs:
         log_dir = cfg['PATHS']['LOGS'] + "training\\" + cur_date
         tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
         callbacks.append(tensorboard)
 
-    # Define the model.
-    histogram = list(np.bincount(data['TRAIN']['label'].astype(int)))
-    print(['Class ' + str(i) + ': ' + str(histogram[i]) + '. ' for i in range(len(histogram))])
-    input_shape = cfg['DATA']['IMG_DIM'] + [3]
-    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
-        output_bias = np.log([histogram[1] / histogram[0]])
-        model = dcnn_binary(cfg['NN']['DCNN_BINARY'], input_shape, metrics, output_bias=output_bias)
-    else:
-        n_classes = len(cfg['DATA']['CLASSES'])
-        model = dcnn_multiclass(cfg['NN']['DCNN_MULTICLASS'], input_shape, n_classes, metrics)
-
     # Conduct desired train experiment
     if experiment == 'single_train':
-        model, test_metrics, test_generator = train_model(cfg, data, model, callbacks)
+        model, test_metrics, test_generator = train_model(cfg, data, callbacks)
 
     # Visualization of test results
     test_predictions = model.predict_generator(test_generator, verbose=0)
-    roc_img = plot_roc("Test set", data['TEST']['label'], test_predictions, dir_path=None)
-    cm_img = plot_confusion_matrix(data['TEST']['label'], test_predictions, dir_path=None)
+    test_labels = test_generator.labels
+    covid_idx = test_generator.class_indices['COVID-19']
+    roc_img = plot_roc("Test set", test_labels, test_predictions, class_id=covid_idx, dir_path=None)
+    cm_img = plot_confusion_matrix(test_labels, test_predictions, class_id=covid_idx, dir_path=None)
 
     # Log test set results and plots in TensorBoard
     if write_logs:
-        writer = tf.summary.create_file_writer(logdir=log_dir)
+        writer = tf_summary.create_file_writer(logdir=log_dir)
+
+        # Create table of test set metrics
         test_summary_str = [['**Metric**','**Value**']]
+        thresholds = cfg['TRAIN']['THRESHOLDS']  # Load classification thresholds
         for metric in test_metrics:
             if metric in ['precision', 'recall'] and isinstance(metric, list):
                 metric_values = dict(zip(thresholds, test_metrics[metric]))
             else:
                 metric_values = test_metrics[metric]
             test_summary_str.append([metric, str(metric_values)])
+
+        # Create table of model and train config values
+        hparam_summary_str = [['**Variable**', '**Value**']]
+        for key in cfg['TRAIN']:
+            hparam_summary_str.append([key, str(cfg['TRAIN'][key])])
+        if cfg['TRAIN']['CLASS_MODE'] == 'binary':
+            for key in cfg['NN']['DCNN_BINARY']:
+                hparam_summary_str.append([key, str(cfg['NN']['DCNN_BINARY'][key])])
+        else:
+            for key in cfg['NN']['DCNN_BINARY']:
+                hparam_summary_str.append([key, str(cfg['NN']['DCNN_BINARY'][key])])
+
+        # Write to TensorBoard logs
         with writer.as_default():
-            tf.summary.text(name='Test set metrics', data=tf.convert_to_tensor(test_summary_str), step=0)
-            tf.summary.image(name='ROC Curve (Test Set)', data=roc_img, step=0)
-            tf.summary.image(name='Confusion Matrix (Test Set)', data=cm_img, step=0)
+            tf_summary.text(name='Test set metrics', data=tf.convert_to_tensor(test_summary_str), step=0)
+            tf_summary.text(name='Run hyperparameters', data=tf.convert_to_tensor(hparam_summary_str), step=0)
+            tf_summary.image(name='ROC Curve (Test Set)', data=roc_img, step=0)
+            tf_summary.image(name='Confusion Matrix (Test Set)', data=cm_img, step=0)
 
     # Save the model's weights
     if save_weights:

@@ -13,7 +13,7 @@ to this effort. If you are interested in getting involved in this project by len
 
 A model has been trained on a dataset composed of X-rays
 labeled positive for COVID-19 infection, normal X-rays, and X-rays
-depicting bacterial and viral pneumonias. Currently, we are using
+depicting evidence of other pneumonias. Currently, we are using
 [Local Interpretable
 Model-Agnostic Explanations](https://arxiv.org/pdf/1602.04938.pdf) (i.e.
 LIME) as the interpretability method being applied to the model. This
@@ -51,19 +51,12 @@ global effort of identifying and treating cases of COVID-19. This model is a pro
    field in the _PATHS_ section of [config.yml](config.yml) to the
    address of the root directory of the cloned repository (for help see
    [Project Config](#project-config)).
-4. Download and unzip the [Kaggle chest X-ray
-   pneumonia dataset](https://www.kaggle.com/paultimothymooney/chest-xray-pneumonia)
-   somewhere on your local machine. Move all examples in the _train_,
-   _val_ and _test_ subfolders to subfolders at the same level entitled
-   _normal_ and _pneumonia_. Set the _RAW_OTHER_DATA_ field in the
-   _PATHS_ section of [config.yml](config.yml) to the address of the
-   folder containing your dataset. This folder should now look something
-   like:
-   ```
-   ├── chest-xray-pneumonia 
-   │ ├── normal                    <- Normal images from train, val, test folders
-   │ └── pneumonia                 <- Pneumonia images from train, val, test folders
-   ```
+4. Download and unzip the
+   [RSNA Pneumonia Detection Challenge](https://www.kaggle.com/c/rsna-pneumonia-detection-challenge)
+   dataset from Kaggle somewhere on your local machine. Set the
+   _RAW_OTHER_DATA_ field in the _PATHS_ section of
+   [config.yml](config.yml) to the address of the folder containing the
+   dataset.
 5. Execute [_preprocess.py_](src/data/preprocess.py) to create Pandas
    DataFrames of filenames and labels. Preprocessed DataFrames and
    corresponding images of the dataset will be saved within
@@ -101,14 +94,12 @@ global effort of identifying and treating cases of COVID-19. This model is a pro
    training and validation sets, and performance on the test set. The
    logs can be visualized by running
    [TensorBoard](https://www.tensorflow.org/tensorboard) locally. See
-   below for examples of plots from a TensorBoard log file depicting
-   loss on the training and validation sets vs. epoch. Plots depicting
-   the change in performance metrics throughout the training process
-   (such as the example below) are available in the _SCALARS_ tab of
-   TensorBoard.  
+   below for an example of a plot from a TensorBoard log file depicting
+   loss on the training and validation sets versus epoch. Plots
+   depicting the change in performance metrics throughout the training
+   process (such as the example below) are available in the _SCALARS_
+   tab of TensorBoard.  
    ![alt text](documents/readme_images/tensorboard_loss.png "Loss vs
-   Epoch")  
-   ![alt text](documents/readme_images/tensorboard_auc.png "AUC vs
    Epoch")  
    You can also visualize the trained model's performance on the test
    set. See below for an example of the ROC Curve and Confusion Matrix
@@ -124,12 +115,12 @@ classifier, which is set by default in [config.yml](config.yml). The
 user has the option of training a model to perform binary prediction on
 whether the X-ray exhibits signs of COVID-19 or training a model to
 perform multi-class classification to distinguish COVID-19 cases, other
-viral pneumonia cases, bacterial pneumonia cases and normal X-rays. For
-a multi-class model, the output layer is a list of probabilities
-outputted by a softmax final layer. In the multi-class scenario,
-precision, recall and F1-Score are calculated for the COVID-19 class
-only. To train a multi-class classifier, the user should be aware of the
-following changes that may be made to [config.yml](config.yml):
+pneumonia cases and normal X-rays. For a multi-class model, the output
+layer is a vector of probabilities outputted by a softmax final layer.
+In the multi-class scenario, precision, recall and F1-Score are
+calculated for the COVID-19 class only. To train a multi-class
+classifier, the user should be aware of the following changes that may
+be made to [config.yml](config.yml):
 - Within the _TRAIN_ section, set the _CLASS_MODE_ field to
   _'multiclass'_. By default, it is set to _'binary'_.
 - The class names are listed in the _CLASSES_ field of the _DATA_
@@ -138,10 +129,9 @@ following changes that may be made to [config.yml](config.yml):
   _CLASS_MULTIPLIER_ field in the _TRAIN_ section.
 - You can update hyperparameters for the multiclass classification model
   by setting the fields in the _DCNN_MULTICLASS_ subsection of _NN_.
-- In the multiclass scenario, LIME explanations are given for only the
-  COVID-19 logit of the model's prediction. If you wish to generate LIME
-  explanations for the prediction class (i.e. the logit with the highest
-  value), set _COVID_ONLY_ within _LIME_ to _'false'_.
+- By default, LIME explanations are given for the class of the model's
+  prediction. If you wish to generate LIME explanations for the COVID-19
+  class only, set _COVID_ONLY_ within _LIME_ to _'true'_.
 
 ## LIME Explanations
 Since the predictions made by this model may be used be healthcare
@@ -191,14 +181,21 @@ examples in the test set.
    coloured red. The image will be automatically saved in
    _documents/generated_images/_, and its filename will resemble the
    following: _Client_client_id_exp_yyyymmdd-hhmmss.png_. See below for
-   examples of this graphic. Note that class 1 indicates that the scan
-   is positive for COVID-19.
+   examples of this graphic.
 
 It is our hope that healthcare professionals will be able to provide
 feedback on the model based on their assessment of the quality of these
 explanations. If the explanations make sense to individuals with
 extensive experience interpreting X-rays, perhaps certain patterns can
 be identified as radiological signatures of COVID-19.
+
+Below are examples of LIME explanations. The top two images are
+explanations of a couple of the binary classifier's predictions. Green
+regions and red regions identify superpixels that most contributed to
+and against prediction of COVID-19 respectively. The bottom two images
+are explanations of a couple of the multi-class classifier's
+predictions. Green regions and red regions identify superpixels that
+most contributed to and against the predicted class respectively.
 
 ![alt text](documents/readme_images/LIME_example0.PNG "Sample LIME
 explanation #1")  
@@ -264,8 +261,8 @@ below.
 #### PATHS
 - **RAW_COVID_DATA**: Path to folder containing
   [COVID-19 image dataset](https://github.com/ieee8023/covid-chestxray-dataset)
-- **RAW_OTHER_DATA**: Path to folder containing [Kaggle chest X-ray
-  pneumonia dataset](https://www.kaggle.com/paultimothymooney/chest-xray-pneumonia)
+- **RAW_OTHER_DATA**: Path to folder containing
+  [RSNA Pneumonia Detection Challenge dataset](https://www.kaggle.com/c/rsna-pneumonia-detection-challenge)
 - **MODEL_WEIGHTS**: Path at which to save trained model's weights
 - **MODEL_TO_LOAD**: Path to the trained model's weights that you would
   like to load for prediction
@@ -273,31 +270,32 @@ below.
 - **IMG_DIM**: Desired target size of image after preprocessing
 - **VAL_SPLIT**: Fraction of the data allocated to the validation set
 - **TEST_SPLIT**: Fraction of the data allocated to the test set
-- **KAGGLE_DATA_FRAC**: Fraction of the images from the Kaggle chest
-  X-ray dataset to use. The default value results in a dataset of > 1000
-  images.
-- **CLASSES**: For a multi-class model, this is an ordered list of class
-  names.
+- **KAGGLE_DATA_FRAC**: Fraction of the images from the RSNA Kaggle
+  chest X-ray dataset to use. The default value results in a dataset of
+  about 1000 images total.
+- **CLASSES**: This is an ordered list of class names. Must be the same
+  length as the number of classes you wish to distinguish.
 #### TRAIN
+- **CLASS_MODE**: The type of classification to be performed. Should be
+  set before performing preprocessing. Set to either _'binary'_ or
+  _'multiclass'_.
 - **EXPERIMENT_TYPE**: The type of training experiment you would like to
   perform if executing [_train.py_](src/train.py). For now, the only
   choice is _'single_train'_.
+- **BATCH_SIZE**: Mini-batch size during training
 - **EPOCHS**: Number of epochs to train the model for
 - **THRESHOLDS**: A single float or list of floats in range [0, 1]
   defining the classification threshold. Affects precision and recall
   metrics.
-- **BATCH_SIZE**: Mini-batch size during training
+- **PATIENCE**: Number of epochs to wait before freezing the model if
+  validation loss does not decrease.
 - **IMB_STRATEGY**: Class imbalancing strategy to employ. In our
   dataset, the ratio of positive to negative ground truth was very low,
   prompting the use of these strategies. Set either to _'class_weight'_
   or _'random_oversample'_.
-- **CLASS_MODE**: The type of classification to be performed. Should be
-  set before performing preprocessing. Set to either _'binary'_ or
-  _'multiclass'_.
-- **CLASS_MULTIPLIER**: For the multi-class scenario: a list of
-  coefficients to multiply the computed class weights by during
-  computation of loss function. Must be the same length as the number of
-  classes.
+- **CLASS_MULTIPLIER**: A list of coefficients to multiply the computed
+  class weights by during computation of loss function. Must be the same
+  length as the number of classes.
 #### NN
 - **DCNN_BINARY**: Contains definitions of configurable hyperparameters
   associated with a custom deep convolutional neural network for binary
@@ -336,11 +334,11 @@ below.
   include in a LIME explanation
 - **NUM_SAMPLES**: The number of samples used to fit a linear model when
   explaining a prediction using LIME
-- **COVID_ONLY**: When explaining predictions of a multi-class
-  classifier, set to _'true'_ if you want explanations to be provided
-  for the predicted logit corresponding to COVID-19 despite the model's
-  prediction. If set to _'false'_, explanations will be provided for the
-  logit corresponding to the predicted class.
+- **COVID_ONLY**: Set to _'true'_ if you want explanations to be
+  provided for the predicted logit corresponding to the "COVID-19"
+  class, despite the model's prediction. If set to _'false'_,
+  explanations will be provided for the logit corresponding to the
+  predicted class.
 #### PREDICTION
 - **THRESHOLD**: Classification threshold for prediction
 
