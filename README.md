@@ -177,8 +177,7 @@ examples in the test set.
    coloured red. The image will be automatically saved in
    _documents/generated_images/_, and its filename will resemble the
    following: _Client_client_id_exp_yyyymmdd-hhmmss.png_. See below for
-   examples of this graphic. Note that class 1 indicates that the scan
-   is positive for COVID-19.
+   examples of this graphic.
 
 It is our hope that healthcare professionals will be able to provide
 feedback on the model based on their assessment of the quality of these
