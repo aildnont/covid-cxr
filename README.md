@@ -6,12 +6,12 @@ illness testing positive for COVID-19 from other X-rays, (2) to
 promote discovery of patterns in such X-rays via machine learning
 interpretability algorithms, and (3) to build more robust and extensible machine learning infrastructure trained on a variety of data types, to aid in the global response to COVID-19. 
 
-We are calling on all machine learning practitioners and healthcare
+We are calling on machine learning practitioners and healthcare
 professionals who can contribute their expertise to this effort. If you
 are interested in getting involved in this project by lending your
-expertise, please reach out to us ([contact info](#contact) is at the bottom
+expertise, or sharing data through data-sharing agreements, please reach out to us ([contact info](#contact) is at the bottom
 of this page); otherwise, feel free to experiment with the code base in
-this repo.
+this repo. The initial model was built by Blake VanBerlo of the Artificial Intelligence Research and Innovation Lab at the City of London, Canada.
 
 A model has been trained on a dataset composed of X-rays
 labeled positive for COVID-19 infection, normal X-rays, and X-rays
@@ -19,12 +19,13 @@ depicting evidence of other pneumonias. Currently, we are using
 [Local Interpretable
 Model-Agnostic Explanations](https://arxiv.org/pdf/1602.04938.pdf) (i.e.
 LIME) as the interpretability method being applied to the model. This
-project is in need of more expertise and more data. Please consider
-contributing or reaching out to us if you are able to lend a hand by signing up at the above link. This
+project is in need of more expertise and more data. This
 project is in its infancy and not a tool for medical diagnosis. The immediacy of this work cannot be
 overstated, as any insights derived from this project may be of benefit
 to healthcare practitioners and researchers as the COVID-19 pandemic
 continues to evolve.
+
+
 
 ## Why X-rays?
 There have been promising efforts to apply machine learning to aid in
@@ -347,9 +348,10 @@ below.
 ## Contact
 **Matt Ross**  
 Manager, Artificial Intelligence  
-Information Technology Services, 
-City Manager’s Office  
+Information Technology Services 
+City Manager’s Office 
 The Corporation of the City of London  
 201 Queens Ave. Suite 300, London, ON. N6A 1J1  
 P: 519.661.CITY (2489) x 5451 | C: 226.448.9113  
 maross@london.ca
+
