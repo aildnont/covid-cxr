@@ -6,7 +6,7 @@ numpy==1.17.4
 scikit_image==0.15.0
 imbalanced_learn==0.6.1
 opencv_python==4.1.0.25
-tensorflow_gpu==2.0.0
+tensorflow_gpu==2.0.1
 pandas==0.25.3
 lime==0.1.1.37
 dill==0.3.0
