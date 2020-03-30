@@ -2,6 +2,7 @@ import pandas as pd
 import yaml
 import os
 import datetime
+import random
 import numpy as np
 from imblearn.over_sampling import RandomOverSampler
 from math import ceil
@@ -10,6 +11,7 @@ from tensorflow.keras.metrics import BinaryAccuracy, CategoricalAccuracy, Precis
 from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ReduceLROnPlateau
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorboard.plugins.hparams import api as hp
 from src.models.models import *
 from src.visualization.visualize import *
 from src.custom.metrics import F1Score
@@ -44,8 +46,10 @@ def random_minority_oversample(train_set):
     Y_train = train_set['label'].to_numpy()
     sampler = RandomOverSampler(random_state=np.random.randint(0, high=1000))
     X_resampled, Y_resampled = sampler.fit_resample(X_train, Y_train)
+    filenames = X_resampled[:, 1]     # Filename is in second column
+    label_strs = X_resampled[:, 2]    # Class name is in second column
     print("Train set shape before oversampling: ", X_train.shape, " Train set shape after resampling: ", X_resampled.shape)
-    train_set_resampled = pd.DataFrame({'filename': np.squeeze(X_resampled, axis=1), 'label':Y_resampled})
+    train_set_resampled = pd.DataFrame({'filename': filenames, 'label': Y_resampled, 'label_str': label_strs})
     return train_set_resampled
 
 
@@ -84,9 +88,10 @@ def train_model(cfg, data, callbacks, verbose=1):
         shuffle=False)
 
     # Apply class imbalance strategy. We have many more X-rays negative for COVID-19 than positive.
+    histogram = np.bincount(np.array(train_generator.labels).astype(int))  # Get class distribution
+    class_weight = None
     if cfg['TRAIN']['IMB_STRATEGY'] == 'class_weight':
         class_multiplier = cfg['TRAIN']['CLASS_MULTIPLIER']
-        histogram = np.bincount(np.array(train_generator.labels).astype(int))   # Get class distribution
         class_multiplier = [class_multiplier[cfg['DATA']['CLASSES'].index(c)] for c in test_generator.class_indices]
         class_weight = get_class_weights(histogram, class_multiplier)
 
@@ -131,6 +136,128 @@ def train_model(cfg, data, callbacks, verbose=1):
     return model, test_metrics, test_generator
 
 
+def random_hparam_search(cfg, data, callbacks, log_dir):
+    '''
+    Conduct a random hyperparameter search over the ranges given for the hyperparameters in config.yml and log results
+    in TensorBoard. Model is trained x times for y random combinations of hyperparameters.
+    :param cfg: Project config
+    :param data: Dict containing the partitioned datasets
+    :param callbacks: List of callbacks for Keras model (excluding TensorBoard)
+    :param log_dir: Base directory in which to store logs
+    :return: (Last model trained, resultant test set metrics, test data generator)
+    '''
+
+    # Define HParam objects for each hyperparameter we wish to tune.
+    hp_ranges = cfg['HP_SEARCH']['RANGES']
+    HPARAMS = []
+    HPARAMS.append(hp.HParam('KERNEL_SIZE', hp.Discrete(hp_ranges['KERNEL_SIZE'])))
+    HPARAMS.append(hp.HParam('MAXPOOL_SIZE', hp.Discrete(hp_ranges['MAXPOOL_SIZE'])))
+    HPARAMS.append(hp.HParam('INIT_FILTERS', hp.Discrete(hp_ranges['INIT_FILTERS'])))
+    HPARAMS.append(hp.HParam('FILTER_EXP_BASE', hp.IntInterval(hp_ranges['FILTER_EXP_BASE'][0], hp_ranges['FILTER_EXP_BASE'][1])))
+    HPARAMS.append(hp.HParam('NODES_DENSE0', hp.Discrete(hp_ranges['NODES_DENSE0'])))
+    HPARAMS.append(hp.HParam('CONV_BLOCKS', hp.IntInterval(hp_ranges['CONV_BLOCKS'][0], hp_ranges['CONV_BLOCKS'][1])))
+    HPARAMS.append(hp.HParam('DROPOUT', hp.RealInterval(hp_ranges['DROPOUT'][0], hp_ranges['DROPOUT'][1])))
+    HPARAMS.append(hp.HParam('LR', hp.RealInterval(hp_ranges['LR'][0], hp_ranges['LR'][1])))
+    HPARAMS.append(hp.HParam('OPTIMIZER', hp.Discrete(hp_ranges['OPTIMIZER'])))
+    HPARAMS.append(hp.HParam('L2_LAMBDA', hp.RealInterval(hp_ranges['L2_LAMBDA'][0], hp_ranges['L2_LAMBDA'][1])))
+    HPARAMS.append(hp.HParam('BATCH_SIZE', hp.Discrete(hp_ranges['BATCH_SIZE'])))
+    HPARAMS.append(hp.HParam('IMB_STRATEGY', hp.Discrete(hp_ranges['IMB_STRATEGY'])))
+
+    # Define test set metrics that we wish to log to TensorBoard for each training run
+    HP_METRICS = [hp.Metric(metric, display_name='Test ' + metric) for metric in cfg['HP_SEARCH']['METRICS']]
+
+    # Configure TensorBoard to log the results
+    with tf.summary.create_file_writer(log_dir).as_default():
+        hp.hparams_config(hparams=HPARAMS, metrics=HP_METRICS)
+
+    # Complete a number of training runs at different hparam values and log the results.
+    repeats_per_combo = cfg['HP_SEARCH']['REPEATS']   # Number of times to train the model per combination of hparams
+    num_combos = cfg['HP_SEARCH']['COMBINATIONS']     # Number of random combinations of hparams to attempt
+    num_sessions = num_combos * repeats_per_combo       # Total number of runs in this experiment
+    model_type = 'DCNN_BINARY' if cfg['TRAIN']['CLASS_MODE'] == 'binary' else 'DCNN_MULTICLASS'
+    trial_id = 0
+    for group_idx in range(num_combos):
+        rand = random.Random()
+        HPARAMS = {h: h.domain.sample_uniform(rand) for h in HPARAMS}
+        hparams = {h.name: HPARAMS[h] for h in HPARAMS}  # To pass to model definition
+        for repeat_idx in range(repeats_per_combo):
+            trial_id += 1
+            print("Running training session %d/%d" % (trial_id, num_sessions))
+            print("Hparam values: ", {h.name: HPARAMS[h] for h in HPARAMS})
+            trial_logdir = os.path.join(log_dir, str(trial_id))     # Need specific logdir for each trial
+            callbacks_hp = callbacks + [TensorBoard(log_dir=trial_logdir, profile_batch=0, write_graph=False)]
+
+            # Set values of hyperparameters for this run in config file.
+            for h in hparams:
+                if h in ['LR', 'L2_LAMBDA']:
+                    val = 10 ** hparams[h]      # These hyperparameters are sampled on the log scale.
+                else:
+                    val = hparams[h]
+                cfg['NN'][model_type][h] = val
+
+            # Set some hyperparameters that are not specified in model definition.
+            cfg['TRAIN']['BATCH_SIZE'] = hparams['BATCH_SIZE']
+            cfg['TRAIN']['IMB_STRATEGY'] = hparams['IMB_STRATEGY']
+
+            # Run a training session and log the performance metrics on the test set to HParams dashboard in TensorBoard
+            with tf.summary.create_file_writer(trial_logdir).as_default():
+                hp.hparams(HPARAMS, trial_id=str(trial_id))
+                model, test_metrics, test_generator = train_model(cfg, data, callbacks_hp, verbose=0)
+                for metric in HP_METRICS:
+                    if metric._tag in test_metrics:
+                        tf.summary.scalar(metric._tag, test_metrics[metric._tag], step=1)   # Log test metric
+    return
+
+
+def log_test_results(cfg, model, test_generator, test_metrics, log_dir):
+    '''
+    Visualize performance of a trained model on the test set. Optionally save the model.
+    :param cfg: Project config
+    :param model: A trained Keras model
+    :param test_generator: A Keras generator for the test set
+    :param test_metrics: Dict of test set performance metrics
+    :param log_dir: Path to write TensorBoard logs
+    '''
+
+    # Visualization of test results
+    test_predictions = model.predict_generator(test_generator, verbose=0)
+    test_labels = test_generator.labels
+    covid_idx = test_generator.class_indices['COVID-19']
+    roc_img = plot_roc("Test set", test_labels, test_predictions, class_id=covid_idx, dir_path=None)
+    cm_img = plot_confusion_matrix(test_labels, test_predictions, class_id=covid_idx, dir_path=None)
+
+    # Log test set results and plots in TensorBoard
+    writer = tf_summary.create_file_writer(logdir=log_dir)
+
+    # Create table of test set metrics
+    test_summary_str = [['**Metric**','**Value**']]
+    thresholds = cfg['TRAIN']['THRESHOLDS']  # Load classification thresholds
+    for metric in test_metrics:
+        if metric in ['precision', 'recall'] and isinstance(metric, list):
+            metric_values = dict(zip(thresholds, test_metrics[metric]))
+        else:
+            metric_values = test_metrics[metric]
+        test_summary_str.append([metric, str(metric_values)])
+
+    # Create table of model and train config values
+    hparam_summary_str = [['**Variable**', '**Value**']]
+    for key in cfg['TRAIN']:
+        hparam_summary_str.append([key, str(cfg['TRAIN'][key])])
+    if cfg['TRAIN']['CLASS_MODE'] == 'binary':
+        for key in cfg['NN']['DCNN_BINARY']:
+            hparam_summary_str.append([key, str(cfg['NN']['DCNN_BINARY'][key])])
+    else:
+        for key in cfg['NN']['DCNN_BINARY']:
+            hparam_summary_str.append([key, str(cfg['NN']['DCNN_BINARY'][key])])
+
+    # Write to TensorBoard logs
+    with writer.as_default():
+        tf_summary.text(name='Test set metrics', data=tf.convert_to_tensor(test_summary_str), step=0)
+        tf_summary.text(name='Run hyperparameters', data=tf.convert_to_tensor(hparam_summary_str), step=0)
+        tf_summary.image(name='ROC Curve (Test Set)', data=roc_img, step=0)
+        tf_summary.image(name='Confusion Matrix (Test Set)', data=cm_img, step=0)
+    return
+
 def train_experiment(experiment='single_train', save_weights=True, write_logs=True):
     '''
     Defines and trains HIFIS-v2 model. Prints and logs relevant metrics.
@@ -152,63 +279,26 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
 
     # Set callbacks.
     early_stopping = EarlyStopping(monitor='val_loss', verbose=1, patience=cfg['TRAIN']['PATIENCE'], mode='min', restore_best_weights=True)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=0.00001, verbose=1)
     callbacks = [early_stopping]
-    if write_logs:
-        log_dir = cfg['PATHS']['LOGS'] + "training\\" + cur_date
-        tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
-        callbacks.append(tensorboard)
 
-    # Conduct desired train experiment
+    # Conduct the desired train experiment
     if experiment == 'single_train':
+        if write_logs:
+            log_dir = cfg['PATHS']['LOGS'] + "training\\" + cur_date
+            tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
+            callbacks.append(tensorboard)
         model, test_metrics, test_generator = train_model(cfg, data, callbacks)
-
-    # Visualization of test results
-    test_predictions = model.predict_generator(test_generator, verbose=0)
-    test_labels = test_generator.labels
-    covid_idx = test_generator.class_indices['COVID-19']
-    roc_img = plot_roc("Test set", test_labels, test_predictions, class_id=covid_idx, dir_path=None)
-    cm_img = plot_confusion_matrix(test_labels, test_predictions, class_id=covid_idx, dir_path=None)
-
-    # Log test set results and plots in TensorBoard
-    if write_logs:
-        writer = tf_summary.create_file_writer(logdir=log_dir)
-
-        # Create table of test set metrics
-        test_summary_str = [['**Metric**','**Value**']]
-        thresholds = cfg['TRAIN']['THRESHOLDS']  # Load classification thresholds
-        for metric in test_metrics:
-            if metric in ['precision', 'recall'] and isinstance(metric, list):
-                metric_values = dict(zip(thresholds, test_metrics[metric]))
-            else:
-                metric_values = test_metrics[metric]
-            test_summary_str.append([metric, str(metric_values)])
-
-        # Create table of model and train config values
-        hparam_summary_str = [['**Variable**', '**Value**']]
-        for key in cfg['TRAIN']:
-            hparam_summary_str.append([key, str(cfg['TRAIN'][key])])
-        if cfg['TRAIN']['CLASS_MODE'] == 'binary':
-            for key in cfg['NN']['DCNN_BINARY']:
-                hparam_summary_str.append([key, str(cfg['NN']['DCNN_BINARY'][key])])
-        else:
-            for key in cfg['NN']['DCNN_BINARY']:
-                hparam_summary_str.append([key, str(cfg['NN']['DCNN_BINARY'][key])])
-
-        # Write to TensorBoard logs
-        with writer.as_default():
-            tf_summary.text(name='Test set metrics', data=tf.convert_to_tensor(test_summary_str), step=0)
-            tf_summary.text(name='Run hyperparameters', data=tf.convert_to_tensor(hparam_summary_str), step=0)
-            tf_summary.image(name='ROC Curve (Test Set)', data=roc_img, step=0)
-            tf_summary.image(name='Confusion Matrix (Test Set)', data=cm_img, step=0)
-
-    # Save the model's weights
-    if save_weights:
-        model_path = os.path.splitext(cfg['PATHS']['MODEL_WEIGHTS'])[0] + cur_date + '.h5'
-        save_model(model, model_path)
-    return test_metrics
+        if write_logs:
+            log_test_results(cfg, model, test_generator, test_metrics, log_dir)
+        if save_weights:
+            model_path = os.path.splitext(cfg['PATHS']['MODEL_WEIGHTS'])[0] + cur_date + '.h5'
+            save_model(model, model_path)           # Save the model's weights
+    if experiment == 'hparam_search':
+        log_dir = cfg['PATHS']['LOGS'] + "hparam_search\\" + cur_date
+        random_hparam_search(cfg, data, callbacks, log_dir)
+    return
 
 
 if __name__ == '__main__':
     cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))
-    results = train_experiment(experiment=cfg['TRAIN']['EXPERIMENT_TYPE'], save_weights=True, write_logs=True)
+    train_experiment(experiment=cfg['TRAIN']['EXPERIMENT_TYPE'], save_weights=True, write_logs=True)
