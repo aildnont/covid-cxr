@@ -40,15 +40,14 @@ def build_dataset(cfg):
     pa_normal_idxs = []
     for df_idx in rsna_normal_df.index.values.tolist():
         filename = rsna_normal_df.loc[df_idx]['patientId']
-        if not os.path.exists(other_data_path + filename + '.jpg'):
-            ds = dicom.dcmread(os.path.join(other_data_path + 'stage_2_train_images/' + filename + '.dcm'))
-            if ds.SeriesDescription.split(' ')[1] == 'PA':
-                pixel_arr = ds.pixel_array
-                cv2.imwrite(os.path.join(other_data_path + filename + '.jpg'), pixel_arr)
-                pa_normal_idxs.append(df_idx)
-                pa_file_counter += 1
-            if pa_file_counter >= num_rsna_imgs // 2:
-                break
+        ds = dicom.dcmread(os.path.join(other_data_path + 'stage_2_train_images/' + filename + '.dcm'))
+        if ds.SeriesDescription.split(' ')[1] == 'PA':
+            pixel_arr = ds.pixel_array
+            cv2.imwrite(os.path.join(other_data_path + filename + '.jpg'), pixel_arr)
+            pa_normal_idxs.append(df_idx)
+            pa_file_counter += 1
+        if pa_file_counter >= num_rsna_imgs // 2:
+            break
     rsna_normal_df = rsna_normal_df.loc[pa_normal_idxs]
 
     # Convert dicom files of CXRs with pneumonia to jpg if not done already in a previous run. Select only PA views.
@@ -57,15 +56,14 @@ def build_dataset(cfg):
     num_remaining = num_rsna_imgs - num_rsna_imgs // 2
     for df_idx in rsna_pneum_df.index.values.tolist():
         filename = rsna_pneum_df.loc[df_idx]['patientId']
-        if not os.path.exists(other_data_path + filename + '.jpg'):
-            ds = dicom.dcmread(os.path.join(other_data_path + 'stage_2_train_images/' + filename + '.dcm'))
-            if ds.SeriesDescription.split(' ')[1] == 'PA':
-                pixel_arr = ds.pixel_array
-                cv2.imwrite(os.path.join(other_data_path + filename + '.jpg'), pixel_arr)
-                pa_pneum_idxs.append(df_idx)
-                pa_file_counter += 1
-            if pa_file_counter >= num_remaining:
-                break
+        ds = dicom.dcmread(os.path.join(other_data_path + 'stage_2_train_images/' + filename + '.dcm'))
+        if ds.SeriesDescription.split(' ')[1] == 'PA':
+            pixel_arr = ds.pixel_array
+            cv2.imwrite(os.path.join(other_data_path + filename + '.jpg'), pixel_arr)
+            pa_pneum_idxs.append(df_idx)
+            pa_file_counter += 1
+        if pa_file_counter >= num_remaining:
+            break
     rsna_pneum_df = rsna_pneum_df.loc[pa_pneum_idxs]
 
     mode = cfg['TRAIN']['CLASS_MODE']
