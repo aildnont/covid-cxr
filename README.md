@@ -208,6 +208,73 @@ explanation #3")
 ![alt text](documents/readme_images/LIME_example3.PNG "Sample LIME
 explanation #4")
 
+### Random Hyperparameter Search
+Hyperparameter tuning is an important part of the standard machine
+learning workflow. Our implementation allows users to conduct a random
+hyperparameter search. Many fields in the _TRAIN_ and _NN_ sections of
+[config.yml](config.yml) are considered to be hyperparameters. With the help of the
+[HParam
+Dashboard](https://www.tensorflow.org/tensorboard/hyperparameter_tuning_with_hparams),
+one can see the effect of different combinations of hyperparameters on
+the model's test set performance metrics.
+
+In our random hyperparameter search, we study the effects of _x_ random
+combinations of hyperparameters by training the model _y_ times for each
+of the _x_ combinations and recording the results. See the steps below
+on how to conduct a random hyperparameter search with our implementation
+for the following 4 hyperparameters: _dropout_, _learning rate_, _conv
+blocks_, and _optimizer_.
+1. In the in the _HP_SEARCH_ section of [config.yml](config.yml), set
+   the number of random combinations of hyperparameters you wish to
+   study and the number of times you would like to train the model for
+   each combination.
+   ```
+   COMBINATIONS: 50
+   REPEATS: 2
+   ```
+2. Set the ranges of hyperparameters you wish to study in the _RANGES_
+   subsection of the _HP_SEARCH_ section of [config.yml](config.yml).
+   Consider whether your hyperparameter ranges are continuous (i.e.
+   real), discrete or integer ranges and whether any need to be
+   investigated on the logarithmic scale.
+   ```
+   DROPOUT: [0.2, 0.5]          # Real range
+   LR: [-4.0, -2.5]             # Real range on logarithmic scale (10^x)   
+   CONV_BLOCKS: [2, 4]          # Integer range
+   OPTIMIZER: ['adam', 'sgd']   # Discrete range
+   ```
+3.  Within the _random_hparam_search()_ function defined in
+    [train.py](src/train.py), add your hyperparameters as HParam objects
+    to the list of hyperparameters being considered (if they are not
+    already there).
+    ```
+    HPARAMS.append(hp.HParam('DROPOUT', hp.RealInterval(hp_ranges['DROPOUT'][0], hp_ranges['DROPOUT'][1])))
+    HPARAMS.append(hp.HParam('LR', hp.RealInterval(hp_ranges['LR'][0], hp_ranges['LR'][1])))
+    HPARAMS.append(hp.HParam('CONV_BLOCKS', hp.IntInterval(hp_ranges['CONV_BLOCKS'][0], hp_ranges['CONV_BLOCKS'][1])))
+    HPARAMS.append(hp.HParam('OPTIMIZER', hp.Discrete(hp_ranges['OPTIMIZER'])))
+    ```
+4. In the appropriate location (varies by hyperparameter), ensure that
+   you assign the hyperparameters based on the random combination. If
+   the hyperparameter already exists in the _NN_ section of
+   [config.yml](config.yml), this will be done for you automatically. In
+   our example, all of these hyperparameters are already in the _NN_
+   section of the project config, so it will be done automatically. If the hyperparameter is not in the _NN_ section, assign the
+   hyperparameter value within the code for a single training run in the
+   _random_hparam_search()_ method in [train.py](src/train.py) (for
+   example, batch size).
+   ```
+   cfg['TRAIN']['BATCH_SIZE'] = hparams['BATCH_SIZE']
+   ```
+6. In [config.yml](config.yml), set _EXPERIMENT_TYPE_ within the _TRAIN_
+   section to _'hparam_search'_.
+7. Execute [train.py](src/train.py). The experiment's logs will be
+   located in _results/logs/hparam_search/_, and the directory name will
+   be the current time in the following format: _yyyymmdd-hhmmss_. These
+   logs contain information on test set metrics with models trained on
+   different combinations of hyperparameters. The logs can be visualized
+   by running [TensorBoard](https://www.tensorflow.org/tensorboard)
+   locally and clicking on the _HPARAM_ tab.
+
 ## Project Structure
 The project looks similar to the directory structure below. Disregard
 any _.gitkeep_ files, as their only purpose is to force Git to track
