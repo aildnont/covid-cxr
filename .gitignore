@@ -8,6 +8,7 @@ results/logs/training/*
 results/logs/hparam_search/*
 results/models/*
 results/predictions/*
+!data/processed/.gitkeep
 !data/processed/train/.gitkeep
 !data/processed/val/.gitkeep
 !data/processed/test/.gitkeep

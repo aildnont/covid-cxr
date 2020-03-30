@@ -19,21 +19,29 @@ def dcnn_resnet(model_config, input_shape, metrics, n_classes=2, output_bias=Non
     lr = model_config['LR']
     dropout = model_config['DROPOUT']
     l2_lambda = model_config['L2_LAMBDA']
-    optimizer = Adam(learning_rate=lr)
+    if model_config['OPTIMIZER'] == 'adam':
+        optimizer = Adam(learning_rate=lr)
+    elif model_config['OPTIMIZER'] == 'sgd':
+        optimizer = SGD(learning_rate=lr)
+    else:
+        optimizer = Adam(learning_rate=lr)  # For now, Adam is default option
     init_filters = model_config['INIT_FILTERS']
     filter_exp_base = model_config['FILTER_EXP_BASE']
     conv_blocks = model_config['CONV_BLOCKS']
     kernel_size = eval(model_config['KERNEL_SIZE'])
     max_pool_size = eval(model_config['MAXPOOL_SIZE'])
     strides = eval(model_config['STRIDES'])
+
+    # Set output bias
     if output_bias is not None:
         output_bias = Constant(output_bias)
     print("MODEL CONFIG: ", model_config)
 
+    # Input layer
     X_input = Input(input_shape)
     X = X_input
 
-    # Add convolutional blocks
+    # Add convolutional (residual) blocks
     for i in range(conv_blocks):
         X_res = X
         X = Conv2D(init_filters * (filter_exp_base ** i), kernel_size, strides=strides, padding='same',

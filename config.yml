@@ -44,6 +44,7 @@ NN:
     CONV_BLOCKS: 3
     NODES_DENSE0: 128
     LR: 0.0003
+    OPTIMIZER: 'adam'
     DROPOUT: 0.40
     L2_LAMBDA: 0.0001
   DCNN_MULTICLASS:
@@ -55,6 +56,7 @@ NN:
     CONV_BLOCKS: 4
     NODES_DENSE0: 128
     LR: 0.0002
+    OPTIMIZER: 'adam'
     DROPOUT: 0.40
     L2_LAMBDA: 0.0001
 
@@ -64,6 +66,24 @@ LIME:
   NUM_FEATURES: 10000
   NUM_SAMPLES: 4000
   COVID_ONLY: false
+
+HP_SEARCH:
+  METRICS: ['accuracy', 'loss', 'recall', 'precision', 'auc']
+  COMBINATIONS: 50
+  REPEATS: 3
+  RANGES:
+    KERNEL_SIZE: ['(3,3)', '(5,5)']     # Discrete range
+    MAXPOOL_SIZE: ['(2,2)', '(3,3)']    # Discrete range
+    INIT_FILTERS: [8, 16, 32]           # Discrete range
+    FILTER_EXP_BASE: [2, 3]             # Int range
+    NODES_DENSE0: [128, 256]            # Discrete range
+    CONV_BLOCKS: [2, 4]                 # Int range
+    DROPOUT: [0.2, 0.4]                 # Real range
+    LR: [-4.0, -3.0]                    # Real range on log scale (10^x)
+    OPTIMIZER: ['adam', 'sgd']          # Discrete range
+    L2_LAMBDA: [-5.0, -4.0]             # Real range on log scale (10^x)
+    BATCH_SIZE: [8, 16]                 # Discrete range
+    IMB_STRATEGY: ['class_weight', 'random_oversample']  # Discrete range
 
 PREDICTION:
   THRESHOLD: 0.5
