@@ -209,7 +209,35 @@ explanation #3")
 ![alt text](documents/readme_images/LIME_example3.PNG "Sample LIME
 explanation #4")
 
-### Random Hyperparameter Search
+## Train multiple models and save the best one
+Not every model trained will perform at the same level on the test set.
+This procedure enables you to train multiple models and save the one
+that scored the best result on the test set for a particular metric that
+you care about optimizing.
+1. Follow step 1 in
+   [Train a model and visualize results](#train-a-model-and-visualize-results).
+2. In [config.yml](config.yml), set _EXPERIMENT_TYPE_ within _TRAIN_ to
+   _'multi_train'_.
+3. Decide which metrics you would like to optimize and in what order. In
+   [config.yml](config.yml), set _METRIC_PREFERENCE_ within _TRAIN_ to
+   your chosen metrics, in order from most to least important. For
+   example, if you decide to select the model with the best AUC on the
+   test set, set the first element in this field to _'AUC'_.
+4. Decide how many models you wish to train. In
+   [config.yml](config.yml), set _NUM_RUNS_ within _TRAIN_ to your
+   chosen number of training sessions. For example, if you wish to train
+   10 models, set this field to _10_.
+5. Execute [train.py](src/train.py). The weights of the model that had
+   the best performance on the test set for the metric you specified
+   will be located in _results/models/training/_, and its filename will
+   resemble the following structure: modelyyyymmdd-hhmmss.h5, where
+   yyyymmdd-hhmmss is the current time. Logs for each run will be
+   located in _results/logs/training/_, and their names will be the
+   current time in the same format. The log directory that has the same
+   name as the model weights file corresponds to the run with the best
+   metrics.
+
+## Random Hyperparameter Search
 Hyperparameter tuning is an important part of the standard machine
 learning workflow. Our implementation allows users to conduct a random
 hyperparameter search. Many fields in the _TRAIN_ and _NN_ sections of
