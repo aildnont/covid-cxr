@@ -13,6 +13,9 @@ PATHS:
   MODEL_WEIGHTS: 'results/models/model.h5'
   MODEL_TO_LOAD: 'results/models/model.h5'
   LIME_EXPLAINER: './data/interpretability/lime_explainer.pkl'
+  OUTPUT_CLASS_INDICES: './data/interpretability/output_class_indices.pkl'
+  BATCH_PRED_IMGS: 'data/processed/test/'
+  BATCH_PREDS: 'results/predictions/'
 
 DATA:
   IMG_DIM: [224, 224]

@@ -294,15 +294,42 @@ blocks_, and _optimizer_.
    ```
    cfg['TRAIN']['BATCH_SIZE'] = hparams['BATCH_SIZE']
    ```
-6. In [config.yml](config.yml), set _EXPERIMENT_TYPE_ within the _TRAIN_
+5. In [config.yml](config.yml), set _EXPERIMENT_TYPE_ within the _TRAIN_
    section to _'hparam_search'_.
-7. Execute [train.py](src/train.py). The experiment's logs will be
+6. Execute [train.py](src/train.py). The experiment's logs will be
    located in _results/logs/hparam_search/_, and the directory name will
    be the current time in the following format: _yyyymmdd-hhmmss_. These
    logs contain information on test set metrics with models trained on
    different combinations of hyperparameters. The logs can be visualized
    by running [TensorBoard](https://www.tensorflow.org/tensorboard)
    locally and clicking on the _HPARAM_ tab.
+
+## Batch predictions and explanations
+Once a trained model is produced, the user may wish to obtain
+predictions and explanations for a list of images. The steps below
+detail how to run prediction for all images in a specified folder, given
+a trained model and serialized
+[LIME Image Explainer object](https://lime-ml.readthedocs.io/en/latest/lime.html#lime.lime_image.LimeImageExplainer).
+1. Ensure that you have already run
+   _[lime_explain.py](src/interpretability/lime_explain.py)_ after
+   training your model, as it will have generated and saved a
+   LIME Image Explainer object at _data/interpretability/lime_explainer.pkl_.
+2. Specify the path of the image folder containing the X-ray images you
+   wish to predict and explain. In [config.yml](config.yml), set
+   _BATCH_PRED_IMGS_ within _PATHS_ to the path of your image folder.
+3. In [config.yml](config.yml), set _MODEL_TO_LOAD_ within _PATHS_ to
+   the path of the model weights file (_.h5_ file) that you wish to use
+   for prediction.
+4. Execute _[predict.py](src/predict.py)_. Running this script will
+   preprocess images, run prediction for all images, and run LIME to
+   explain the predictions. Prediction results will be saved in a .csv
+   file, which will be located in _results/predictions/yyyymmdd-hhmmss_
+   (where yyyymmdd-hhmmss is the time at which the script was executed),
+   and will be called _predictions.csv_. The .csv file will contain
+   image file names, predicted class, model output probabilities, and
+   the file name of the corresponding explanation. The images depicting
+   LIME explanations will be saved in the same folder.
+
 
 ## Project Structure
 The project looks similar to the directory structure below. Disregard
@@ -334,6 +361,7 @@ packages.
 |   |   └── models.py             <- Script containing model definition
 |   ├── visualization             <- Visualization scripts
 |   |   └── visualize.py          <- Script for visualizing model performance metrics
+|   ├── predict.py                <- Script for running batch predictions
 |   └── train.py                  <- Script for training model on preprocessed data
 |
 ├── .gitignore                    <- Files to be be ignored by git.
@@ -364,6 +392,10 @@ below.
 - **MODEL_WEIGHTS**: Path at which to save trained model's weights
 - **MODEL_TO_LOAD**: Path to the trained model's weights that you would
   like to load for prediction
+- **BATCH_PRED_IMGS**: Path to folder containing images for batch
+  prediction
+- **BATCH_PREDS**: Path to folder for outputting batch predictions and
+  explanations
 #### DATA
 - **IMG_DIM**: Desired target size of image after preprocessing
 - **VAL_SPLIT**: Fraction of the data allocated to the validation set
@@ -377,6 +409,9 @@ below.
 - **CLASS_MODE**: The type of classification to be performed. Should be
   set before performing preprocessing. Set to either _'binary'_ or
   _'multiclass'_.
+- **CLASS_MULTIPLIER**: A list of coefficients to multiply the computed
+  class weights by during computation of loss function. Must be the same
+  length as the number of classes.
 - **EXPERIMENT_TYPE**: The type of training experiment you would like to
   perform if executing [_train.py_](src/train.py). For now, the only
   choice is _'single_train'_.
@@ -391,9 +426,12 @@ below.
   dataset, the ratio of positive to negative ground truth was very low,
   prompting the use of these strategies. Set either to _'class_weight'_
   or _'random_oversample'_.
-- **CLASS_MULTIPLIER**: A list of coefficients to multiply the computed
-  class weights by during computation of loss function. Must be the same
-  length as the number of classes.
+- **METRIC_PREFERENCE**: A list of metrics in order of importance (from
+  left to right) to guide selection of the best model during a
+  _'multi_train'_ experiment
+- **NUM_RUNS**: The number of times to train a model in the
+  _'multi_train'_ experiment
+
 #### NN
 - **DCNN_BINARY**: Contains definitions of configurable hyperparameters
   associated with a custom deep convolutional neural network for binary
@@ -412,6 +450,7 @@ below.
   - **NODES_DENSE0**: The number of nodes in the fully connected layer
     following flattening of parameters
   - **LR**: Learning rate
+  - **OPTIMIZER**: Optimization algorithm
   - **DROPOUT**: Dropout rate
   - **L2_LAMBDA**: L2 regularization parameter
 - **DCNN_MULTICLASS**: Contains definitions of configurable
@@ -431,12 +470,25 @@ below.
 - **NUM_FEATURES**: The number of features to
   include in a LIME explanation
 - **NUM_SAMPLES**: The number of samples used to fit a linear model when
-  explaining a prediction using LIME
-- **COVID_ONLY**: Set to _'true'_ if you want explanations to be
-  provided for the predicted logit corresponding to the "COVID-19"
-  class, despite the model's prediction. If set to _'false'_,
-  explanations will be provided for the logit corresponding to the
-  predicted class.
+  explaining a prediction using LIME **COVID_ONLY**: Set to _'true'_ if
+  you want explanations to be provided for the predicted logit
+  corresponding to the "COVID-19" class, despite the model's prediction.
+  If set to _'false'_, explanations will be provided for the logit
+  corresponding to the predicted class.
+#### HP_SEARCH
+- **METRICS**: List of metrics on validation set to monitor in
+  hyperparameter search. Can be any combination of _{'accuracy', 'loss',
+  'recall', 'precision', 'auc'}_
+- **COMBINATIONS**: Number of random combinations of hyperparameters to
+  try in hyperparameter search
+- **REPEATS**: Number of times to repeat training per combination of
+  hyperparameters
+- **RANGES**: Ranges defining possible values that hyperparameters may
+  take. Be sure to check [_train.py_](src/train.py) to ensure that your
+  ranges are defined correctly as real or discrete intervals (see
+  [Random Hyperparameter Search](#random-hyperparameter-search) for an
+  example).
+
 #### PREDICTION
 - **THRESHOLD**: Classification threshold for prediction
 

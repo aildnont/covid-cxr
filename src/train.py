@@ -3,6 +3,7 @@ import yaml
 import os
 import datetime
 import random
+import dill
 import numpy as np
 from imblearn.over_sampling import RandomOverSampler
 from math import ceil
@@ -86,6 +87,9 @@ def train_model(cfg, data, callbacks, verbose=1):
     test_generator = test_img_gen.flow_from_dataframe(dataframe=data['TEST'], directory=cfg['PATHS']['TEST_IMGS'],
         x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode,
         shuffle=False)
+
+    # Save model's ordering of class indices
+    dill.dump(test_generator.class_indices, open(cfg['PATHS']['OUTPUT_CLASS_INDICES'], 'wb'))
 
     # Apply class imbalance strategy. We have many more X-rays negative for COVID-19 than positive.
     histogram = np.bincount(np.array(train_generator.labels).astype(int))  # Get class distribution
