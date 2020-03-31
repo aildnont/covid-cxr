@@ -9,47 +9,8 @@ import numpy as np
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from src.visualization.visualize import visualize_explanation
+from src.predict import predict_instance, predict_and_explain
 from src.data.preprocess import remove_text
-
-def predict_instance(x, model):
-    '''
-    Helper function for LIME explainer. Runs model prediction on perturbations of the example.
-    :param x: List of perturbed examples from an example
-    :param model: Keras model
-    :return: A numpy array comprising a list of class probabilities for each predicted perturbation
-    '''
-    y = model.predict(x)  # Run prediction on the perturbations
-    if y.shape[1] == 1:
-        probs = np.concatenate([1.0 - y, y], axis=1)  # Compute class probabilities from the output of the model
-    else:
-        probs = y
-    return probs
-
-
-def predict_and_explain(x, model, exp, num_features, num_samples, segmentation_fn):
-    '''
-    Use the model to predict a single example and apply LIME to generate an explanation.
-    :param x: Preprocessed image to predict
-    :param model: The trained neural network model
-    :param exp: A LimeImageExplainer object
-    :param num_features: # of features to use in explanation
-    :param num_samples: # of times to perturb the example to be explained
-    :return: The LIME explainer for the instance
-    '''
-
-    def predict(x):
-        '''
-        Helper function for LIME explainer. Runs model prediction on perturbations of the example.
-        :param x: List of perturbed examples from an example
-        :return: A numpy array constituting a list of class probabilities for each predicted perturbation
-        '''
-        probs = predict_instance(x, model)
-        return probs
-
-    # Generate explanation for the example
-    explanation = exp.explain_instance(x, predict, num_features=num_features, num_samples=num_samples, segmentation_fn=segmentation_fn)
-    probs = predict_instance(np.expand_dims(x, axis=0), model)
-    return explanation, probs
 
 
 def setup_lime():
@@ -116,13 +77,10 @@ def explain_xray(lime_dict, idx, save_exp=True):
     new_dim = tuple(lime_dict['IMG_DIM'])
     orig_img = cv2.resize(orig_img, new_dim, interpolation=cv2.INTER_NEAREST)     # Resize image
 
-    # Algorithm for superpixel segmentation. Parameters set to limit size of superpixels and promote border smoothness
-    segmentation_fn = SegmentationAlgorithm('quickshift', kernel_size=2.25, max_dist=50, ratio=0.1, sigma=0.15)
-
     # Make a prediction for this image and retrieve a LIME explanation for the prediction
     start_time = datetime.datetime.now()
     explanation, probs = predict_and_explain(x, lime_dict['MODEL'], lime_dict['EXPLAINER'],
-                                      lime_dict['NUM_FEATURES'], lime_dict['NUM_SAMPLES'], segmentation_fn=segmentation_fn)
+                                      lime_dict['NUM_FEATURES'], lime_dict['NUM_SAMPLES'])
     print("Explanation time = " + str((datetime.datetime.now() - start_time).total_seconds()) + " seconds")
 
 
@@ -142,7 +100,7 @@ def explain_xray(lime_dict, idx, save_exp=True):
         label_to_see = lime_dict['TEST_GENERATOR'].class_indices['COVID-19']
     else:
         label_to_see = 'top'
-    visualize_explanation(orig_img, explanation, img_filename, label, probs, lime_dict['CLASSES'], label_to_see=label_to_see,
+    _ = visualize_explanation(orig_img, explanation, img_filename, label, probs, lime_dict['CLASSES'], label_to_see=label_to_see,
                           file_path=file_path)
     return
 

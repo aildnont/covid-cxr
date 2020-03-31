@@ -133,6 +133,7 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, cla
     :param class_names: Ordered list of class names
     :param label_to_see: Label to visualize in explanation
     :param file_path: Path to save the generated image
+    :return: Path to saved image
     '''
 
     # Plot original image on the left
@@ -152,12 +153,14 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, cla
     fig.text(0.02, 0.8, "Prediction probabilities: " + str(['{:.2f}'.format(probs[i]) for i in range(len(probs))]),
              fontsize=10)
     fig.text(0.02, 0.82, "Predicted Class: " + str(pred_class) + ' (' + class_names[pred_class] + ')', fontsize=10)
-    fig.text(0.02, 0.84, "Ground Truth Class: " + str(label) + ' (' + class_names[label] + ')', fontsize=10)
+    if label is not None:
+        fig.text(0.02, 0.84, "Ground Truth Class: " + str(label) + ' (' + class_names[label] + ')', fontsize=10)
     fig.suptitle("LIME Explanation for image " + img_filename, fontsize=15)
     fig.tight_layout()
 
     # Save the image
+    filename = None
     if file_path is not None:
-        plt.savefig(file_path + img_filename + '_exp_' +
-                    datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png')
-    return
+        filename = file_path + img_filename + '_exp_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png'
+        plt.savefig(filename)
+    return filename
