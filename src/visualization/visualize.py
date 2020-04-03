@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import datetime
 import io
+import os
 import numpy as np
 from sklearn.metrics import confusion_matrix, roc_curve
 from skimage.segmentation import mark_boundaries
@@ -21,9 +22,9 @@ def plot_to_tensor():
     plt.savefig(buf, format='png')
     buf.seek(0)
 
-    image = tf.image.decode_png(buf.getvalue(), channels=4)     # Convert .png buffer to tensorflow image
-    image = tf.expand_dims(image, 0)     # Add the batch dimension
-    return image
+    image_tensor = tf.image.decode_png(buf.getvalue(), channels=4)     # Convert .png buffer to tensorflow image
+    image_tensor = tf.expand_dims(image_tensor, 0)     # Add the batch dimension
+    return image_tensor
 
 def plot_metrics(history, metrics, dir_path=None):
     '''
@@ -50,6 +51,8 @@ def plot_metrics(history, metrics, dir_path=None):
           plt.ylim([0,1])
         plt.legend()
     if dir_path is not None:
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
         plt.savefig(dir_path + 'metrics_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png')
     return
 
@@ -77,8 +80,10 @@ def plot_roc(name, labels, predictions, class_id=1, dir_path=None):
     ax = plt.gca()
     ax.set_aspect('equal')
     if dir_path is not None:
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
         plt.savefig(dir_path + 'ROC_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png')
-    return plot_to_tensor()
+    return plt
 
 def plot_confusion_matrix(labels, predictions, class_id=1, dir_path=None):
     '''
@@ -119,10 +124,10 @@ def plot_confusion_matrix(labels, predictions, class_id=1, dir_path=None):
     # Print these statistics
     print('True (-)ves: ', cm[0][0], '\nFalse (+)ves: ', cm[0][1], '\nFalse (-)ves: ', cm[1][0], '\nTrue (+)ves: ',
           cm[1][1])
-    return plot_to_tensor()
+    return plt
 
 
-def visualize_explanation(orig_img, explanation, img_filename, label, probs, class_names, label_to_see='top', file_path=None):
+def visualize_explanation(orig_img, explanation, img_filename, label, probs, class_names, label_to_see='top', dir_path=None):
     '''
     Visualize an explanation for the prediction of a single X-ray image.
     :param orig_img: Original X-Ray image
@@ -132,7 +137,7 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, cla
     :param probs: Prediction probabilities
     :param class_names: Ordered list of class names
     :param label_to_see: Label to visualize in explanation
-    :param file_path: Path to save the generated image
+    :param dir_path: Path to directory where to save the generated image
     :return: Path to saved image
     '''
 
@@ -160,7 +165,9 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, cla
 
     # Save the image
     filename = None
-    if file_path is not None:
-        filename = file_path + img_filename + '_exp_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png'
+    if dir_path is not None:
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        filename = dir_path + img_filename + '_exp_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png'
         plt.savefig(filename)
     return filename

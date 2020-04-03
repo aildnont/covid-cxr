@@ -8,6 +8,8 @@ results/logs/training/*
 results/logs/hparam_search/*
 results/models/*
 results/predictions/*
+azure/ws_config.json
+azure/.ipynb_checkpoints
 !data/processed/.gitkeep
 !data/processed/train/.gitkeep
 !data/processed/val/.gitkeep

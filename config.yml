@@ -10,7 +10,7 @@ PATHS:
   TEST_SET: 'data/processed/test_set.csv'
   IMAGES: 'documents/generated_images/'
   LOGS: 'results\\logs\\'
-  MODEL_WEIGHTS: 'results/models/model.h5'
+  MODEL_WEIGHTS: 'results/models/'
   MODEL_TO_LOAD: 'results/models/model.h5'
   LIME_EXPLAINER: './data/interpretability/lime_explainer.pkl'
   OUTPUT_CLASS_INDICES: './data/interpretability/output_class_indices.pkl'

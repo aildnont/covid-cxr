@@ -5,9 +5,10 @@ import datetime
 import random
 import dill
 import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow.summary as tf_summary
 from imblearn.over_sampling import RandomOverSampler
 from math import ceil
-import tensorflow.summary as tf_summary
 from tensorflow.keras.metrics import BinaryAccuracy, CategoricalAccuracy, Precision, Recall, AUC
 from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ReduceLROnPlateau
@@ -277,8 +278,10 @@ def log_test_results(cfg, model, test_generator, test_metrics, log_dir):
     test_predictions = model.predict_generator(test_generator, verbose=0)
     test_labels = test_generator.labels
     covid_idx = test_generator.class_indices['COVID-19']
-    roc_img = plot_roc("Test set", test_labels, test_predictions, class_id=covid_idx, dir_path=None)
-    cm_img = plot_confusion_matrix(test_labels, test_predictions, class_id=covid_idx, dir_path=None)
+    plt = plot_roc("Test set", test_labels, test_predictions, class_id=covid_idx)
+    roc_img = plot_to_tensor()
+    plt = plot_confusion_matrix(test_labels, test_predictions, class_id=covid_idx)
+    cm_img = plot_to_tensor()
 
     # Log test set results and plots in TensorBoard
     writer = tf_summary.create_file_writer(logdir=log_dir)
@@ -312,7 +315,7 @@ def log_test_results(cfg, model, test_generator, test_metrics, log_dir):
         tf_summary.image(name='Confusion Matrix (Test Set)', data=cm_img, step=0)
     return
 
-def train_experiment(experiment='single_train', save_weights=True, write_logs=True):
+def train_experiment(cfg=None, experiment='single_train', save_weights=True, write_logs=True):
     '''
     Defines and trains HIFIS-v2 model. Prints and logs relevant metrics.
     :param experiment: The type of training experiment. Choices are {'single_train'}
@@ -322,11 +325,14 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
     '''
 
     # Load project config data
-    cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))
+    if cfg is None:
+        cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))
 
     # Set logs directory
     cur_date = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     log_dir = cfg['PATHS']['LOGS'] + "training\\" + cur_date if write_logs else None
+    if not os.path.exists(cfg['PATHS']['LOGS'] + "training\\"):
+        os.makedirs(cfg['PATHS']['LOGS'] + "training\\")
 
     # Load dataset file paths and labels
     data = {}
@@ -354,11 +360,11 @@ def train_experiment(experiment='single_train', save_weights=True, write_logs=Tr
             if write_logs:
                 log_test_results(cfg, model, test_generator, test_metrics, log_dir)
         if save_weights:
-            model_path = os.path.splitext(cfg['PATHS']['MODEL_WEIGHTS'])[0] + cur_date + '.h5'
+            model_path = cfg['PATHS']['MODEL_WEIGHTS'] + 'model' + cur_date + '.h5'
             save_model(model, model_path)  # Save the model's weights
     return
 
 
 if __name__ == '__main__':
     cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))
-    train_experiment(experiment=cfg['TRAIN']['EXPERIMENT_TYPE'], save_weights=True, write_logs=True)
+    train_experiment(cfg=cfg, experiment=cfg['TRAIN']['EXPERIMENT_TYPE'], save_weights=True, write_logs=True)

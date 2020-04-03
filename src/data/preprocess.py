@@ -118,14 +118,15 @@ def remove_text(img):
     return result
 
 
-def preprocess():
+def preprocess(cfg=None):
     '''
     Preprocess and partition image data. Assemble all image file paths and partition into training, validation and
     test sets. Copy raw images to folders for training, validation and test sets.
     :param mode: Type of classification. Set to either 'binary' or 'multiclass'
     '''
 
-    cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))  # Load config data
+    if cfg is None:
+        cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))  # Load config data
     processed_path = cfg['PATHS']['PROCESSED_DATA']
 
     # Build dataset based on type of classification
@@ -154,6 +155,12 @@ def preprocess():
 
     # Copy images to appropriate directories
     print('Copying training set images.')
+    if not os.path.exists(os.path.join(dest_dir, 'train/')):
+        os.makedirs(os.path.join(dest_dir, 'train/'))
+    if not os.path.exists(os.path.join(dest_dir, 'val/')):
+        os.makedirs(os.path.join(dest_dir, 'val/'))
+    if not os.path.exists(os.path.join(dest_dir, 'test/')):
+        os.makedirs(os.path.join(dest_dir, 'test/'))
     for file_path in tqdm(file_df_train['filename'].tolist()):
         shutil.copy(file_path, os.path.join(dest_dir, 'train/'))
     print('Copying validation set images.')
