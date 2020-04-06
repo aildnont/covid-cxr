@@ -10,6 +10,7 @@ results/models/*
 results/predictions/*
 azure/ws_config.json
 azure/.ipynb_checkpoints
+/.amlignore
 !data/processed/.gitkeep
 !data/processed/train/.gitkeep
 !data/processed/val/.gitkeep
