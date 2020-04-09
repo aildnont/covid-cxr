@@ -22,7 +22,7 @@ DATA:
   VAL_SPLIT: 0.08
   TEST_SPLIT: 0.1
   KAGGLE_DATA_FRAC: 0.2
-  NUM_RSNA_IMGS: 907
+  NUM_RSNA_IMGS: 1000
   CLASSES: ['non-COVID-19', 'COVID-19']                   # Classes for binary classification
   #CLASSES: ['normal', 'COVID-19', 'other_pneumonia']     # Classes for multiclass classification (3 classes)
 

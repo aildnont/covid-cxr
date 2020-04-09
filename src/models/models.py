@@ -1,5 +1,6 @@
 from tensorflow.keras import Sequential, Model
-from tensorflow.keras.layers import Dense, Dropout, Input, MaxPool2D, Conv2D, Flatten, LeakyReLU, BatchNormalization, concatenate
+from tensorflow.keras.layers import Dense, Dropout, Input, MaxPool2D, Conv2D, Flatten, LeakyReLU, BatchNormalization, \
+    Activation, concatenate
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.optimizers import Adam, SGD
 from tensorflow.keras.initializers import Constant
@@ -60,7 +61,8 @@ def dcnn_resnet(model_config, input_shape, metrics, n_classes=2, output_bias=Non
     X = Dropout(dropout)(X)
     X = Dense(nodes_dense0, kernel_initializer='he_uniform', activity_regularizer=l2(l2_lambda))(X)
     X = LeakyReLU()(X)
-    Y = Dense(n_classes, activation='softmax', bias_initializer=output_bias, name='output')(X)
+    X = Dense(n_classes, bias_initializer=output_bias)(X)
+    Y = Activation('softmax', dtype='float32', name='output')(X)
 
     # Set model loss function, optimizer, metrics.
     model = Model(inputs=X_input, outputs=Y)
