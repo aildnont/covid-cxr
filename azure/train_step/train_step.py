@@ -4,7 +4,8 @@ import yaml
 import datetime
 import pandas as pd
 from tensorflow.keras.models import save_model
-from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
+from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, Callback
+import tensorflow as tf
 from azureml.core import Run
 from src.train import train_model
 from src.visualization.visualize import plot_roc, plot_confusion_matrix
@@ -15,6 +16,8 @@ parser.add_argument('--traininglogsdir', type=str, help="training logs directory
 parser.add_argument('--modelsdir', type=str, help="models directory")
 args = parser.parse_args()
 run = Run.get_context()
+print("GPUs available:")
+print(tf.config.experimental.list_physical_devices('GPU'))
 
 # Update paths of input data in config to represent paths on blob.
 cfg = yaml.full_load(open(os.getcwd() + "./config.yml", 'r'))  # Load config data
@@ -40,8 +43,15 @@ data['TRAIN'] = pd.read_csv(cfg['PATHS']['TRAIN_SET'])
 data['VAL'] = pd.read_csv(cfg['PATHS']['VAL_SET'])
 data['TEST'] = pd.read_csv(cfg['PATHS']['TEST_SET'])
 
+# Custom Keras callback that logs all training and validation metrics after each epoch to the current Azure run
+class LogRunMetrics(Callback):
+    def on_epoch_end(self, epoch, log):
+        for metric_name in log:
+            run.log(metric_name, log[metric_name])
+
 # Set model callbacks
-callbacks = [EarlyStopping(monitor='val_loss', verbose=1, patience=cfg['TRAIN']['PATIENCE'], mode='min', restore_best_weights=True)]
+callbacks = [EarlyStopping(monitor='val_loss', verbose=1, patience=cfg['TRAIN']['PATIENCE'], mode='min', restore_best_weights=True),
+             LogRunMetrics()]
 if cfg['PATHS']['LOGS'] is not None:
     callbacks.append(TensorBoard(log_dir=log_dir, histogram_freq=1))
 
