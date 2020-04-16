@@ -60,7 +60,7 @@ def setup_lime():
 
 def explain_xray(lime_dict, idx, save_exp=True):
     '''
-    # Make a prediction and provide a LIME explanation
+    Make a prediction and provide a LIME explanation
     :param lime_dict: dict containing important information and objects for explanation experiments
     :param idx: index of image in test set to explain
     :param save_exp: Boolean indicating whether to save the explanation visualization
