@@ -56,7 +56,9 @@ if cfg['PATHS']['LOGS'] is not None:
     callbacks.append(TensorBoard(log_dir=log_dir, histogram_freq=1))
 
 # Train a model
+start_time = datetime.datetime.now()
 model, test_metrics, test_generator = train_model(cfg, data, callbacks)
+print("TRAINING TIME = " + str((datetime.datetime.now() - start_time).total_seconds() / 60.0) + " min")
 
 # Log test set performance metrics, ROC, confusion matrix in Azure run
 test_predictions = model.predict_generator(test_generator, verbose=0)
