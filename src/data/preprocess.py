@@ -57,7 +57,6 @@ def build_dataset(cfg):
         ds = dicom.dcmread(os.path.join(rsna_data_path + 'stage_2_train_images/' + filename + '.dcm'))
         if any(view in ds.SeriesDescription.split(' ')[1] for view in cfg['DATA']['VIEWS']):  # Select desired X-ray views
             if not os.path.exists(rsna_data_path + filename + '.jpg'):
-                print('normal file written')
                 cv2.imwrite(os.path.join(rsna_data_path + filename + '.jpg'), ds.pixel_array)   # Save as .jpg
             normal_idxs.append(df_idx)
             file_counter += 1
@@ -74,7 +73,6 @@ def build_dataset(cfg):
         ds = dicom.dcmread(os.path.join(rsna_data_path + 'stage_2_train_images/' + filename + '.dcm'))
         if any(view in ds.SeriesDescription.split(' ')[1] for view in cfg['DATA']['VIEWS']):  # Select desired X-ray views
             if not os.path.exists(rsna_data_path + filename + '.jpg'):
-                print('pneumonia file written')
                 cv2.imwrite(os.path.join(rsna_data_path + filename + '.jpg'), ds.pixel_array)  # Save as .jpg
             pneum_idxs.append(df_idx)
             file_counter += 1
@@ -145,7 +143,6 @@ def preprocess():
     '''
 
     cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))  # Load config data
-    processed_path = cfg['PATHS']['PROCESSED_DATA']
 
     # Build dataset based on type of classification
     file_df = build_dataset(cfg)
@@ -157,35 +154,6 @@ def preprocess():
     relative_val_split = val_split / (1 - test_split)  # Calculate fraction of train_df to be used for validation
     file_df_train, file_df_val = train_test_split(file_df_train, test_size=relative_val_split,
                                                       stratify=file_df_train['label'])
-
-    # Delete old datasets
-    dest_dir = os.path.join(os.getcwd(), processed_path)
-    print('Deleting old sets.')
-    for path in pathlib.Path(os.path.join(dest_dir, 'train/')).glob('*'):
-        if '.gitkeep' not in str(path):
-            path.unlink()
-    for path in pathlib.Path(os.path.join(dest_dir, 'val/')).glob('*'):
-        if '.gitkeep' not in str(path):
-            path.unlink()
-    for path in pathlib.Path(os.path.join(dest_dir, 'test/')).glob('*'):
-        if '.gitkeep' not in str(path):
-            path.unlink()
-
-    # Copy images to appropriate directories
-    print('Copying training set images.')
-    for file_path in tqdm(file_df_train['filename'].tolist()):
-        shutil.copy(file_path, os.path.join(dest_dir, 'train/'))
-    print('Copying validation set images.')
-    for file_path in tqdm(file_df_val['filename'].tolist()):
-        shutil.copy(file_path, os.path.join(dest_dir, 'val/'))
-    print('Copying test set images.')
-    for file_path in tqdm(file_df_test['filename'].tolist()):
-        shutil.copy(file_path, os.path.join(dest_dir, 'test/'))
-
-    # Update file path dataframes
-    file_df_train['filename'] = file_df_train['filename'].str.split('/').str[-1]
-    file_df_val['filename'] = file_df_val['filename'].str.split('/').str[-1]
-    file_df_test['filename'] = file_df_test['filename'].str.split('/').str[-1]
 
     # Save training, validation and test sets
     file_df_train.to_csv(cfg['PATHS']['TRAIN_SET'])
