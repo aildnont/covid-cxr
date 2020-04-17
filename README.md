@@ -431,6 +431,7 @@ below.
   _'multi_train'_ experiment
 - **NUM_RUNS**: The number of times to train a model in the
   _'multi_train'_ experiment
+- **NUM_GPUS**: The number of GPUs to distribute training over
 
 #### NN
 - **DCNN_BINARY**: Contains definitions of configurable hyperparameters

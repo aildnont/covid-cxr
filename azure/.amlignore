@@ -8,3 +8,4 @@ src/__pycache__
 LICENCE
 README.md
 .gitignore
+*.ipynb

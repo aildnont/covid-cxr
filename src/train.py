@@ -113,16 +113,23 @@ def train_model(cfg, data, callbacks, verbose=1):
     print('Training distribution: ', ['Class ' + list(test_generator.class_indices.keys())[i] + ': ' + str(histogram[i]) + '. '
            for i in range(len(histogram))])
     input_shape = cfg['DATA']['IMG_DIM'] + [3]
-    model_def = dcnn_resnet if cfg['TRAIN']['MODEL_DEF'] == 'dcnn_resent' else resnet50v2
+    num_gpus = cfg['TRAIN']['NUM_GPUS']
+    if cfg['TRAIN']['MODEL_DEF'] == 'dcnn_resent':
+        model_def = dcnn_resnet
+    elif cfg['TRAIN']['MODEL_DEF'] == 'resnet50v2':
+        model_def = resnet50v2
+    else:
+        model_def = resnet101v2
     if cfg['TRAIN']['CLASS_MODE'] == 'binary':
         histogram = np.bincount(data['TRAIN']['label'].astype(int))
         output_bias = np.log([histogram[i] / (np.sum(histogram) - histogram[i]) for i in range(histogram.shape[0])])
-        model = model_def(cfg['NN']['DCNN_BINARY'], input_shape, metrics, 2, output_bias=output_bias)
+        model = model_def(cfg['NN']['DCNN_BINARY'], input_shape, metrics, 2, output_bias=output_bias, gpus=num_gpus)
     else:
         n_classes = len(cfg['DATA']['CLASSES'])
         histogram = np.bincount(data['TRAIN']['label'].astype(int))
         output_bias = np.log([histogram[i] / (np.sum(histogram) - histogram[i]) for i in range(histogram.shape[0])])
-        model = model_def(cfg['NN']['DCNN_MULTICLASS'], input_shape, metrics, n_classes, output_bias=output_bias)
+        model = model_def(cfg['NN']['DCNN_MULTICLASS'], input_shape, metrics, n_classes, output_bias=output_bias,
+                          gpus=num_gpus)
 
     # Train the model.
     steps_per_epoch = ceil(train_generator.n / train_generator.batch_size)

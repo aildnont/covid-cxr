@@ -18,7 +18,7 @@ PATHS:
   BATCH_PREDS: 'results/predictions/'
 
 DATA:
-  IMG_DIM: [224, 224]
+  IMG_DIM: [512, 512]
   VAL_SPLIT: 0.08
   TEST_SPLIT: 0.1
   KAGGLE_DATA_FRAC: 0.2
@@ -32,13 +32,14 @@ TRAIN:
   CLASS_MULTIPLIER: [0.15, 1.0]                           # Class multiplier for binary classification
   #CLASS_MULTIPLIER: [0.4, 1.0, 0.4]                      # Class multiplier for multiclass classification (3 classes)
   EXPERIMENT_TYPE: 'single_train'                         # One of {'single_train', 'multi_train', 'hparam_search'}
-  BATCH_SIZE: 64
+  BATCH_SIZE: 32
   EPOCHS: 200
   THRESHOLDS: 0.5                                         # Can be changed to list of values in range [0, 1]
   PATIENCE: 7
   IMB_STRATEGY: 'class_weight'                            # One of {'class_weight', 'random_oversample'}
   METRIC_PREFERENCE: ['auc', 'recall', 'precision', 'loss']
   NUM_RUNS: 10
+  NUM_GPUS: 2
 
 NN:
   DCNN_BINARY:
