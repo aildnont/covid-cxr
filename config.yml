@@ -8,7 +8,7 @@ PATHS:
   TEST_SET: 'data/processed/test_set.csv'
   IMAGES: 'documents/generated_images/'
   LOGS: 'results\\logs\\'
-  MODEL_WEIGHTS: 'results/models/model.h5'
+  MODEL_WEIGHTS: 'results/models/'
   MODEL_TO_LOAD: 'results/models/model.h5'
   LIME_EXPLAINER: './data/interpretability/lime_explainer.pkl'
   OUTPUT_CLASS_INDICES: './data/interpretability/output_class_indices.pkl'
@@ -26,16 +26,18 @@ DATA:
 
 TRAIN:
   CLASS_MODE: 'binary'                                    # One of {'binary', 'multiclass'}
+  MODEL_DEF: 'resnet50v2'                                 # One of {'dcnn_resent', 'resnet50v2'}
   CLASS_MULTIPLIER: [0.15, 1.0]                           # Class multiplier for binary classification
   #CLASS_MULTIPLIER: [0.4, 1.0, 0.4]                      # Class multiplier for multiclass classification (3 classes)
   EXPERIMENT_TYPE: 'single_train'                         # One of {'single_train', 'multi_train', 'hparam_search'}
-  BATCH_SIZE: 16
+  BATCH_SIZE: 32
   EPOCHS: 200
   THRESHOLDS: 0.5                                         # Can be changed to list of values in range [0, 1]
   PATIENCE: 7
   IMB_STRATEGY: 'class_weight'                            # One of {'class_weight', 'random_oversample'}
   METRIC_PREFERENCE: ['auc', 'recall', 'precision', 'loss']
   NUM_RUNS: 10
+  NUM_GPUS: 2
 
 NN:
   DCNN_BINARY:

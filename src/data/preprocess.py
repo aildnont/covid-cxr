@@ -135,14 +135,15 @@ def remove_text(img):
     return result
 
 
-def preprocess():
+def preprocess(cfg=None):
     '''
     Preprocess and partition image data. Assemble all image file paths and partition into training, validation and
     test sets. Copy raw images to folders for training, validation and test sets.
     :param mode: Type of classification. Set to either 'binary' or 'multiclass'
     '''
 
-    cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))  # Load config data
+    if cfg is None:
+        cfg = yaml.full_load(open(os.getcwd() + "/config.yml", 'r'))  # Load config data
 
     # Build dataset based on type of classification
     file_df = build_dataset(cfg)
