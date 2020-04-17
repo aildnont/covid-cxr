@@ -400,6 +400,8 @@ below.
   explanations
 #### DATA
 - **IMG_DIM**: Desired target size of image after preprocessing
+- **VIEWS**: List of types of chest X-ray views to include. By default,
+  posteroanterior and anteroposterior views are included.
 - **VAL_SPLIT**: Fraction of the data allocated to the validation set
 - **TEST_SPLIT**: Fraction of the data allocated to the test set
 - **NUM_RSNA_IMGS**: Number of images from the RSNA dataset that you wish

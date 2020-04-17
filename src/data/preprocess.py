@@ -6,7 +6,6 @@ import os
 import pathlib
 import shutil
 import cv2
-from math import ceil
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
@@ -26,16 +25,22 @@ def build_dataset(cfg):
     # Assemble filenames comprising Mila dataset
     mila_df = pd.read_csv(mila_data_path + 'metadata.csv')
     mila_df['filename'] = mila_data_path + 'images/' + mila_df['filename'].astype(str)
-    mila_PA_cxrs_df = (mila_df['view'] == 'PA')
+    mila_views_cxrs_df = (mila_df['view'].str.contains('|'.join(cfg['DATA']['VIEWS'])))    # Select desired X-ray views
     mila_covid_pts_df = (mila_df['finding'] == 'COVID-19')
-    mila_covid_PA_df = mila_df[mila_covid_pts_df & mila_PA_cxrs_df]  # PA images for patients diagnosed COVID-19
+    mila_covid_views_df = mila_df[mila_covid_pts_df & mila_views_cxrs_df]  # Images for patients diagnosed with COVID-19
 
     # Assemble filenames comprising Figure 1 dataset
     fig1_df = pd.read_csv(fig1_data_path + 'metadata.csv', encoding='ISO-8859-1')
-    fig1_df['filename'] = fig1_data_path + 'images/' + fig1_df['patientid'].astype(str) + '.jpg'
-    fig1_PA_cxrs_df = (fig1_df['view'] == 'PA')
+    fig1_df['filename'] = ''
+    for i, row in fig1_df.iterrows():
+        if os.path.exists(fig1_data_path + 'images/' + fig1_df.loc[i, 'patientid'] + '.jpg'):
+            fig1_df.loc[i, 'filename'] = fig1_data_path + 'images/' + fig1_df.loc[i, 'patientid'] + '.jpg'
+        else:
+            fig1_df.loc[i, 'filename'] = fig1_data_path + 'images/' + fig1_df.loc[i, 'patientid'] + '.png'
+    fig1_df['view'].fillna('PA or AP', inplace=True)    # All images in this dataset are either AP or PA
+    fig1_views_cxrs_df = (fig1_df['view'].str.contains('|'.join(cfg['DATA']['VIEWS'])))    # Select desired X-ray views
     fig1_covid_pts_df = (fig1_df['finding'] == 'COVID-19')
-    fig1_covid_PA_df = fig1_df[fig1_covid_pts_df & fig1_PA_cxrs_df]  # PA images for patients diagnosed COVID-19
+    fig1_covid_views_df = fig1_df[fig1_covid_pts_df & fig1_views_cxrs_df]  # Images for patients diagnosed COVID-19
 
     # Assemble filenames comprising RSNA dataset
     rsna_metadata_path = rsna_data_path + 'stage_2_train_labels.csv'
@@ -44,36 +49,38 @@ def build_dataset(cfg):
     rsna_normal_df = rsna_df[rsna_df['Target'] == 0]
     rsna_pneum_df = rsna_df[rsna_df['Target'] == 1]
 
-    # Convert dicom files of CXRs with no findings to jpg if not done already in a previous run. Select only PA views.
-    pa_file_counter = 0
-    pa_normal_idxs = []
+    # Convert dicom files of CXRs with no findings to jpg if not done already in a previous run. Select desired views.
+    file_counter = 0
+    normal_idxs = []
     for df_idx in rsna_normal_df.index.values.tolist():
         filename = rsna_normal_df.loc[df_idx]['patientId']
         ds = dicom.dcmread(os.path.join(rsna_data_path + 'stage_2_train_images/' + filename + '.dcm'))
-        if ds.SeriesDescription.split(' ')[1] == 'PA':
+        if any(view in ds.SeriesDescription.split(' ')[1] for view in cfg['DATA']['VIEWS']):  # Select desired X-ray views
             if not os.path.exists(rsna_data_path + filename + '.jpg'):
-                cv2.imwrite(os.path.join(rsna_data_path + filename + '.jpg'), ds.pixel_array)
-            pa_normal_idxs.append(df_idx)
-            pa_file_counter += 1
-        if pa_file_counter >= num_rsna_imgs // 2:
+                print('normal file written')
+                cv2.imwrite(os.path.join(rsna_data_path + filename + '.jpg'), ds.pixel_array)   # Save as .jpg
+            normal_idxs.append(df_idx)
+            file_counter += 1
+        if file_counter >= num_rsna_imgs // 2:
             break
-    rsna_normal_df = rsna_normal_df.loc[pa_normal_idxs]
+    rsna_normal_df = rsna_normal_df.loc[normal_idxs]
 
-    # Convert dicom files of CXRs with pneumonia to jpg if not done already in a previous run. Select only PA views.
-    pa_file_counter = 0
-    pa_pneum_idxs = []
+    # Convert dicom files of CXRs with pneumonia to jpg if not done already in a previous run. Select desired views.
+    file_counter = 0
+    pneum_idxs = []
     num_remaining = num_rsna_imgs - num_rsna_imgs // 2
     for df_idx in rsna_pneum_df.index.values.tolist():
         filename = rsna_pneum_df.loc[df_idx]['patientId']
         ds = dicom.dcmread(os.path.join(rsna_data_path + 'stage_2_train_images/' + filename + '.dcm'))
-        if ds.SeriesDescription.split(' ')[1] == 'PA':
-            pixel_arr = ds.pixel_array
-            cv2.imwrite(os.path.join(rsna_data_path + filename + '.jpg'), pixel_arr)
-            pa_pneum_idxs.append(df_idx)
-            pa_file_counter += 1
-        if pa_file_counter >= num_remaining:
+        if any(view in ds.SeriesDescription.split(' ')[1] for view in cfg['DATA']['VIEWS']):  # Select desired X-ray views
+            if not os.path.exists(rsna_data_path + filename + '.jpg'):
+                print('pneumonia file written')
+                cv2.imwrite(os.path.join(rsna_data_path + filename + '.jpg'), ds.pixel_array)  # Save as .jpg
+            pneum_idxs.append(df_idx)
+            file_counter += 1
+        if file_counter >= num_remaining:
             break
-    rsna_pneum_df = rsna_pneum_df.loc[pa_pneum_idxs]
+    rsna_pneum_df = rsna_pneum_df.loc[pneum_idxs]
 
     mode = cfg['TRAIN']['CLASS_MODE']
     n_classes = len(cfg['DATA']['CLASSES'])
@@ -81,12 +88,12 @@ def build_dataset(cfg):
     label_dict = {i: cfg['DATA']['CLASSES'][i] for i in range(n_classes)}  # Map class name to number
 
     if mode == 'binary':
-        mila_covid_PA_df['label'] = 1                                       # Mila images with COVID-19 diagnosis
-        mila_other_PA_df = mila_df[~mila_covid_pts_df & mila_PA_cxrs_df]
-        mila_other_PA_df['label'] = 0                                       # Mila images with alternative diagnoses
-        fig1_covid_PA_df['label'] = 1                                       # Figure 1 images with COVID-19 diagnosis
-        file_df = pd.concat([mila_covid_PA_df[['filename', 'label']], mila_other_PA_df[['filename', 'label']],
-                             fig1_covid_PA_df[['filename', 'label']]], axis=0)
+        mila_covid_views_df['label'] = 1                                       # Mila images with COVID-19 diagnosis
+        mila_other_views_df = mila_df[~mila_covid_pts_df & mila_views_cxrs_df]
+        mila_other_views_df['label'] = 0                                       # Mila images with alternative diagnoses
+        fig1_covid_views_df['label'] = 1                                       # Figure 1 images with COVID-19 diagnosis
+        file_df = pd.concat([mila_covid_views_df[['filename', 'label']], mila_other_views_df[['filename', 'label']],
+                             fig1_covid_views_df[['filename', 'label']]], axis=0)
 
         rsna_df = pd.concat([rsna_normal_df, rsna_pneum_df], axis=0)
         rsna_filenames = rsna_data_path + rsna_df['patientId'].astype(str) + '.jpg'
@@ -94,15 +101,15 @@ def build_dataset(cfg):
 
         file_df = pd.concat([file_df, rsna_file_df], axis=0)         # Combine both datasets
     else:
-        mila_covid_PA_df['label'] = class_dict['COVID-19']
-        mila_PA_pneum_df = mila_df[mila_df['finding'].isin(['SARS', 'Steptococcus', 'MERS', 'Legionella', 'Klebsiella',
-                                                            'Chlamydophila', 'Pneumocystis']) & mila_PA_cxrs_df]
-        mila_PA_pneum_df['label'] = class_dict['other_pneumonia']                 # Mila CXRs with other peumonias
-        mila_PA_normal_df = mila_df[mila_df['finding'].isin(['No finding']) & mila_PA_cxrs_df]
-        mila_PA_normal_df['label'] = class_dict['normal']                         # Mila CXRs with no finding
-        fig1_covid_PA_df['label'] = class_dict['COVID-19']                        # Figure 1 CXRs with COVID-19 finding
-        file_df = pd.concat([mila_covid_PA_df[['filename', 'label']], mila_PA_pneum_df[['filename', 'label']],
-                             mila_PA_normal_df[['filename', 'label']], fig1_covid_PA_df[['filename', 'label']]], axis=0)
+        mila_covid_views_df['label'] = class_dict['COVID-19']
+        mila_views_pneum_df = mila_df[mila_df['finding'].isin(['SARS', 'Steptococcus', 'MERS', 'Legionella', 'Klebsiella',
+                                                            'Chlamydophila', 'Pneumocystis']) & mila_views_cxrs_df]
+        mila_views_pneum_df['label'] = class_dict['other_pneumonia']                 # Mila CXRs with other peumonias
+        mila_views_normal_df = mila_df[mila_df['finding'].isin(['No finding']) & mila_views_cxrs_df]
+        mila_views_normal_df['label'] = class_dict['normal']                         # Mila CXRs with no finding
+        fig1_covid_views_df['label'] = class_dict['COVID-19']                        # Figure 1 CXRs with COVID-19 finding
+        file_df = pd.concat([mila_covid_views_df[['filename', 'label']], mila_views_pneum_df[['filename', 'label']],
+                             mila_views_normal_df[['filename', 'label']], fig1_covid_views_df[['filename', 'label']]], axis=0)
 
         # Organize some files from RSNA dataset into "normal", and "pneumonia" XRs
         rsna_normal_filenames = rsna_data_path + rsna_normal_df['patientId'].astype(str) + '.jpg'
@@ -119,8 +126,8 @@ def build_dataset(cfg):
 
 def remove_text(img):
     '''
-    Attempts to remove textual artifacts from X-ray images. For example, many images indicate the right side of the
-    body with a white 'R'. Works only for very bright text.
+    Attempts to remove bright textual artifacts from X-ray images. For example, many images indicate the right side of
+    the body with a white 'R'. Works only for very bright text.
     :param img: Numpy array of image
     :return: Array of image with (ideally) any characters removed and inpainted
     '''

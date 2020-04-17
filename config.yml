@@ -20,6 +20,7 @@ PATHS:
 
 DATA:
   IMG_DIM: [224, 224]
+  VIEWS: ['PA', 'AP', nan]
   VAL_SPLIT: 0.08
   TEST_SPLIT: 0.1
   NUM_RSNA_IMGS: 1000
