@@ -48,12 +48,14 @@ def dcnn_resnet(model_config, input_shape, metrics, n_classes=2, output_bias=Non
     for i in range(conv_blocks):
         X_res = X
         X = Conv2D(init_filters * (filter_exp_base ** i), kernel_size, strides=strides, padding='same',
-                         kernel_initializer='he_uniform', activity_regularizer=l2(l2_lambda))(X)
+                         kernel_initializer='he_uniform', activity_regularizer=l2(l2_lambda),
+                         name='conv' + str(i) + '_0')(X)
         X = BatchNormalization()(X)
         X = LeakyReLU()(X)
         X = Conv2D(init_filters * (filter_exp_base ** i), kernel_size, strides=strides, padding='same',
-                         kernel_initializer='he_uniform', activity_regularizer=l2(l2_lambda))(X)
-        X = concatenate([X, X_res])
+                         kernel_initializer='he_uniform', activity_regularizer=l2(l2_lambda),
+                         name='conv' + str(i) + '_1')(X)
+        X = concatenate([X, X_res], name='concat' + str(i))
         X = BatchNormalization()(X)
         X = LeakyReLU()(X)
         X = MaxPool2D(max_pool_size, padding='same')(X)

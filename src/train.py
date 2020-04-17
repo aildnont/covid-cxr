@@ -81,11 +81,11 @@ def train_model(cfg, data, callbacks, verbose=1):
     img_shape = tuple(cfg['DATA']['IMG_DIM'])
     y_col = 'label_str'
     class_mode = 'categorical'
-    train_generator = train_img_gen.flow_from_dataframe(dataframe=data['TRAIN'], directory=cfg['PATHS']['TRAIN_IMGS'],
+    train_generator = train_img_gen.flow_from_dataframe(dataframe=data['TRAIN'], directory=None,
         x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode)
-    val_generator = val_img_gen.flow_from_dataframe(dataframe=data['VAL'], directory=cfg['PATHS']['VAL_IMGS'],
+    val_generator = val_img_gen.flow_from_dataframe(dataframe=data['VAL'], directory=None,
         x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode)
-    test_generator = test_img_gen.flow_from_dataframe(dataframe=data['TEST'], directory=cfg['PATHS']['TEST_IMGS'],
+    test_generator = test_img_gen.flow_from_dataframe(dataframe=data['TEST'], directory=None,
         x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode,
         shuffle=False)
 
