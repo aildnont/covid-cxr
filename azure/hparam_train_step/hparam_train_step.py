@@ -33,9 +33,6 @@ cfg['PATHS']['PROCESSED_DATA'] = args.preprocesseddir
 cfg['PATHS']['TRAIN_SET'] = cfg['PATHS']['PROCESSED_DATA'] + '/' + cfg['PATHS']['TRAIN_SET'].split('/')[-1]
 cfg['PATHS']['VAL_SET'] = cfg['PATHS']['PROCESSED_DATA'] + '/' + cfg['PATHS']['VAL_SET'].split('/')[-1]
 cfg['PATHS']['TEST_SET'] = cfg['PATHS']['PROCESSED_DATA'] + '/' + cfg['PATHS']['TEST_SET'].split('/')[-1]
-cfg['PATHS']['TRAIN_IMGS'] = cfg['PATHS']['PROCESSED_DATA'] + '/' + cfg['PATHS']['TRAIN_IMGS'].split('/')[-2] + '/'
-cfg['PATHS']['VAL_IMGS'] = cfg['PATHS']['PROCESSED_DATA'] + '/' + cfg['PATHS']['VAL_IMGS'].split('/')[-2] + '/'
-cfg['PATHS']['TEST_IMGS'] = cfg['PATHS']['PROCESSED_DATA'] + '/' + cfg['PATHS']['TEST_IMGS'].split('/')[-2] + '/'
 
 # Set hyperparameter values in project config based on values supplied in args list.
 args_dict = vars(args)
