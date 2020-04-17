@@ -385,9 +385,11 @@ goals. A summary of the major configurable elements in this file is
 below.
 
 #### PATHS
-- **RAW_COVID_DATA**: Path to folder containing
-  [COVID-19 image dataset](https://github.com/ieee8023/covid-chestxray-dataset)
-- **RAW_OTHER_DATA**: Path to folder containing
+- **MILA_DATA**: Path to folder containing
+  [Mila COVID-19 image dataset](https://github.com/ieee8023/covid-chestxray-dataset)
+- **FIGURE1_DATA**: Path to folder containing
+  [Figure 1 image dataset](https://github.com/agchung/Figure1-COVID-chestxray-dataset)
+- **RSNA_DATA**: Path to folder containing
   [RSNA Pneumonia Detection Challenge dataset](https://www.kaggle.com/c/rsna-pneumonia-detection-challenge)
 - **MODEL_WEIGHTS**: Path at which to save trained model's weights
 - **MODEL_TO_LOAD**: Path to the trained model's weights that you would
@@ -398,11 +400,12 @@ below.
   explanations
 #### DATA
 - **IMG_DIM**: Desired target size of image after preprocessing
+- **VIEWS**: List of types of chest X-ray views to include. By default,
+  posteroanterior and anteroposterior views are included.
 - **VAL_SPLIT**: Fraction of the data allocated to the validation set
 - **TEST_SPLIT**: Fraction of the data allocated to the test set
-- **KAGGLE_DATA_FRAC**: Fraction of the images from the RSNA Kaggle
-  chest X-ray dataset to use. The default value results in a dataset of
-  about 1000 images total.
+- **NUM_RSNA_IMGS**: Number of images from the RSNA dataset that you wish
+  to include in your assembled dataset
 - **CLASSES**: This is an ordered list of class names. Must be the same
   length as the number of classes you wish to distinguish.
 #### TRAIN
