@@ -19,17 +19,26 @@ def build_dataset(cfg):
     '''
 
     # Get paths of raw datasets to be included
-    covid_data_path = cfg['PATHS']['RAW_COVID_DATA']
-    other_data_path = cfg['PATHS']['RAW_OTHER_DATA']
+    mila_data_path = cfg['PATHS']['MILA_DATA']
+    fig1_data_path = cfg['PATHS']['FIGURE1_DATA']
+    rsna_data_path = cfg['PATHS']['RSNA_DATA']
 
-    # Assemble filenames comprising COVID dataset
-    metadata_file_path = covid_data_path + 'metadata.csv'
-    covid_df = pd.read_csv(metadata_file_path)
-    covid_PA_cxrs_df = (covid_df['view'] == 'PA')
-    covid_patients_df = (covid_df['finding'] == 'COVID-19')
+    # Assemble filenames comprising Mila dataset
+    mila_df = pd.read_csv(mila_data_path + 'metadata.csv')
+    mila_df['filename'] = mila_data_path + 'images/' + mila_df['filename'].astype(str)
+    mila_PA_cxrs_df = (mila_df['view'] == 'PA')
+    mila_covid_pts_df = (mila_df['finding'] == 'COVID-19')
+    mila_covid_PA_df = mila_df[mila_covid_pts_df & mila_PA_cxrs_df]  # PA images for patients diagnosed COVID-19
+
+    # Assemble filenames comprising Figure 1 dataset
+    fig1_df = pd.read_csv(fig1_data_path + 'metadata.csv', encoding='ISO-8859-1')
+    fig1_df['filename'] = fig1_data_path + 'images/' + fig1_df['patientid'].astype(str) + '.jpg'
+    fig1_PA_cxrs_df = (fig1_df['view'] == 'PA')
+    fig1_covid_pts_df = (fig1_df['finding'] == 'COVID-19')
+    fig1_covid_PA_df = fig1_df[fig1_covid_pts_df & fig1_PA_cxrs_df]  # PA images for patients diagnosed COVID-19
 
     # Assemble filenames comprising RSNA dataset
-    rsna_metadata_path = other_data_path + 'stage_2_train_labels.csv'
+    rsna_metadata_path = rsna_data_path + 'stage_2_train_labels.csv'
     rsna_df = pd.read_csv(rsna_metadata_path)
     num_rsna_imgs = cfg['DATA']['NUM_RSNA_IMGS']
     rsna_normal_df = rsna_df[rsna_df['Target'] == 0]
@@ -40,10 +49,10 @@ def build_dataset(cfg):
     pa_normal_idxs = []
     for df_idx in rsna_normal_df.index.values.tolist():
         filename = rsna_normal_df.loc[df_idx]['patientId']
-        ds = dicom.dcmread(os.path.join(other_data_path + 'stage_2_train_images/' + filename + '.dcm'))
+        ds = dicom.dcmread(os.path.join(rsna_data_path + 'stage_2_train_images/' + filename + '.dcm'))
         if ds.SeriesDescription.split(' ')[1] == 'PA':
-            pixel_arr = ds.pixel_array
-            cv2.imwrite(os.path.join(other_data_path + filename + '.jpg'), pixel_arr)
+            if not os.path.exists(rsna_data_path + filename + '.jpg'):
+                cv2.imwrite(os.path.join(rsna_data_path + filename + '.jpg'), ds.pixel_array)
             pa_normal_idxs.append(df_idx)
             pa_file_counter += 1
         if pa_file_counter >= num_rsna_imgs // 2:
@@ -56,10 +65,10 @@ def build_dataset(cfg):
     num_remaining = num_rsna_imgs - num_rsna_imgs // 2
     for df_idx in rsna_pneum_df.index.values.tolist():
         filename = rsna_pneum_df.loc[df_idx]['patientId']
-        ds = dicom.dcmread(os.path.join(other_data_path + 'stage_2_train_images/' + filename + '.dcm'))
+        ds = dicom.dcmread(os.path.join(rsna_data_path + 'stage_2_train_images/' + filename + '.dcm'))
         if ds.SeriesDescription.split(' ')[1] == 'PA':
             pixel_arr = ds.pixel_array
-            cv2.imwrite(os.path.join(other_data_path + filename + '.jpg'), pixel_arr)
+            cv2.imwrite(os.path.join(rsna_data_path + filename + '.jpg'), pixel_arr)
             pa_pneum_idxs.append(df_idx)
             pa_file_counter += 1
         if pa_file_counter >= num_remaining:
@@ -72,29 +81,32 @@ def build_dataset(cfg):
     label_dict = {i: cfg['DATA']['CLASSES'][i] for i in range(n_classes)}  # Map class name to number
 
     if mode == 'binary':
-        PA_covid_df = covid_df[covid_patients_df & covid_PA_cxrs_df]      # PA images diagnosed COVID
-        PA_covid_df['label'] = 1
-        PA_other_df = covid_df[~covid_patients_df & covid_PA_cxrs_df]     # PA images with other diagnoses
-        PA_other_df['label'] = 0
-        file_df = pd.concat([PA_covid_df[['filename', 'label']], PA_other_df[['filename', 'label']]], axis=0)
-        file_df['filename'] = covid_data_path + 'images/' + file_df['filename'].astype(str)    # Set as absolute paths
+        mila_covid_PA_df['label'] = 1                                       # Mila images with COVID-19 diagnosis
+        mila_other_PA_df = mila_df[~mila_covid_pts_df & mila_PA_cxrs_df]
+        mila_other_PA_df['label'] = 0                                       # Mila images with alternative diagnoses
+        fig1_covid_PA_df['label'] = 1                                       # Figure 1 images with COVID-19 diagnosis
+        file_df = pd.concat([mila_covid_PA_df[['filename', 'label']], mila_other_PA_df[['filename', 'label']],
+                             fig1_covid_PA_df[['filename', 'label']]], axis=0)
 
         rsna_df = pd.concat([rsna_normal_df, rsna_pneum_df], axis=0)
-        rsna_filenames = other_data_path + rsna_df['patientId'].astype(str) + '.jpg'
+        rsna_filenames = rsna_data_path + rsna_df['patientId'].astype(str) + '.jpg'
         rsna_file_df = pd.DataFrame({'filename': rsna_filenames, 'label': 0})
 
         file_df = pd.concat([file_df, rsna_file_df], axis=0)         # Combine both datasets
     else:
-        PA_covid_df = covid_df[covid_patients_df & covid_PA_cxrs_df]  # PA images diagnosed COVID
-        PA_covid_df['label'] = class_dict['COVID-19']
-        PA_pneum_df = covid_df[covid_df['finding'].isin(['SARS', 'Steptococcus']) & covid_PA_cxrs_df]   # PA images diagnosed with SARS
-        PA_pneum_df['label'] = class_dict['other_pneumonia']                 # Classify SARS with other viral pneumonias
-        file_df = pd.concat([PA_covid_df[['filename', 'label']], PA_pneum_df[['filename', 'label']]], axis=0)
-        file_df['filename'] = covid_data_path + 'images/' + file_df['filename'].astype(str)  # Set as absolute paths
+        mila_covid_PA_df['label'] = class_dict['COVID-19']
+        mila_PA_pneum_df = mila_df[mila_df['finding'].isin(['SARS', 'Steptococcus', 'MERS', 'Legionella', 'Klebsiella',
+                                                            'Chlamydophila', 'Pneumocystis']) & mila_PA_cxrs_df]
+        mila_PA_pneum_df['label'] = class_dict['other_pneumonia']                 # Mila CXRs with other peumonias
+        mila_PA_normal_df = mila_df[mila_df['finding'].isin(['No finding']) & mila_PA_cxrs_df]
+        mila_PA_normal_df['label'] = class_dict['normal']                         # Mila CXRs with no finding
+        fig1_covid_PA_df['label'] = class_dict['COVID-19']                        # Figure 1 CXRs with COVID-19 finding
+        file_df = pd.concat([mila_covid_PA_df[['filename', 'label']], mila_PA_pneum_df[['filename', 'label']],
+                             mila_PA_normal_df[['filename', 'label']], fig1_covid_PA_df[['filename', 'label']]], axis=0)
 
         # Organize some files from RSNA dataset into "normal", and "pneumonia" XRs
-        rsna_normal_filenames = other_data_path + rsna_normal_df['patientId'].astype(str) + '.jpg'
-        rsna_pneum_filenames = other_data_path + rsna_pneum_df['patientId'].astype(str) + '.jpg'
+        rsna_normal_filenames = rsna_data_path + rsna_normal_df['patientId'].astype(str) + '.jpg'
+        rsna_pneum_filenames = rsna_data_path + rsna_pneum_df['patientId'].astype(str) + '.jpg'
         rsna_normal_file_df = pd.DataFrame({'filename': rsna_normal_filenames, 'label': class_dict['normal']})
         rsna_pneum_file_df = pd.DataFrame({'filename': rsna_pneum_filenames, 'label': class_dict['other_pneumonia']})
         rsna_file_df = pd.concat([rsna_normal_file_df, rsna_pneum_file_df], axis=0)

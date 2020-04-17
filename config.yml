@@ -1,6 +1,7 @@
 PATHS:
-  RAW_COVID_DATA: 'D:/Documents/Work/covid-cxr/data/covid-chestxray-dataset/'   # Path of extracted COVID dataset https://github.com/ieee8023/covid-chestxray-dataset
-  RAW_OTHER_DATA: 'D:/Documents/Work/covid-cxr/data/rsna/'                      # Path of extracted NIH dataset https://www.kaggle.com/c/rsna-pneumonia-detection-challenge
+  MILA_DATA: 'D:/Documents/Work/covid-cxr/data/covid-chestxray-dataset/'              # Path of Mila dataset https://github.com/ieee8023/covid-chestxray-dataset
+  FIGURE1_DATA: 'D:/Documents/Work/covid-cxr/data/Figure1-COVID-chestxray-dataset/'   # Path of Figure 1 dataset https://github.com/agchung/Figure1-COVID-chestxray-dataset
+  RSNA_DATA: 'D:/Documents/Work/covid-cxr/data/rsna/'                                 # Path of RSNA dataset https://www.kaggle.com/c/rsna-pneumonia-detection-challenge
   PROCESSED_DATA: 'data/processed/'
   TRAIN_IMGS: 'data/processed/train/'
   VAL_IMGS: 'data/processed/val/'
@@ -21,8 +22,7 @@ DATA:
   IMG_DIM: [224, 224]
   VAL_SPLIT: 0.08
   TEST_SPLIT: 0.1
-  KAGGLE_DATA_FRAC: 0.2
-  NUM_RSNA_IMGS: 907
+  NUM_RSNA_IMGS: 1000
   CLASSES: ['non-COVID-19', 'COVID-19']                   # Classes for binary classification
   #CLASSES: ['normal', 'COVID-19', 'other_pneumonia']     # Classes for multiclass classification (3 classes)
 
