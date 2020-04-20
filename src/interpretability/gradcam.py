@@ -23,7 +23,6 @@ def setup_gradcam():
     setup_dict['MODEL'] = load_model(cfg['PATHS']['MODEL_TO_LOAD'], compile=False)
     print(setup_dict['MODEL'].summary())
     setup_dict['IMG_PATH'] = cfg['PATHS']['IMAGES']
-    setup_dict['TEST_IMG_PATH'] = cfg['PATHS']['TEST_IMGS']
     setup_dict['TEST_SET'] = pd.read_csv(cfg['PATHS']['TEST_SET'])
     setup_dict['IMG_DIM'] = cfg['DATA']['IMG_DIM']
     setup_dict['CLASSES'] = cfg['DATA']['CLASSES']
@@ -32,7 +31,7 @@ def setup_gradcam():
     test_img_gen = ImageDataGenerator(preprocessing_function=remove_text,
                                        samplewise_std_normalization=True, samplewise_center=True)
     test_generator = test_img_gen.flow_from_dataframe(dataframe=setup_dict['TEST_SET'],
-                                                      directory=cfg['PATHS']['TEST_IMGS'],
+                                                      directory=None,
                                                       x_col="filename", y_col='label_str',
                                                       target_size=tuple(cfg['DATA']['IMG_DIM']), batch_size=1,
                                                       class_mode='categorical', shuffle=False)
@@ -55,7 +54,7 @@ def apply_gradcam(setup_dict, idx, layer_name, hm_intensity=0.5, save_hm=True):
         x, y = setup_dict['TEST_GENERATOR'].next()
 
     # Get the corresponding original image (no preprocessing)
-    orig_img = cv2.imread(setup_dict['TEST_IMG_PATH'] + setup_dict['TEST_SET']['filename'][idx])
+    orig_img = cv2.imread(setup_dict['TEST_SET']['filename'][idx])
     new_dim = tuple(setup_dict['IMG_DIM'])
     orig_img = cv2.resize(orig_img, new_dim, interpolation=cv2.INTER_NEAREST)     # Resize image
 
@@ -89,10 +88,10 @@ def apply_gradcam(setup_dict, idx, layer_name, hm_intensity=0.5, save_hm=True):
     img_filename = setup_dict['TEST_SET']['filename'][idx]
     label = setup_dict['TEST_SET']['label'][idx]
     _ = visualize_heatmap(orig_img, heatmap_img, img_filename, label, probs, setup_dict['CLASSES'],
-                              file_path=file_path)
+                              dir_path=file_path)
     return
 
 if __name__ == '__main__':
     setup_dict = setup_gradcam()
-    apply_gradcam(setup_dict, 0, 'concatenate_2', hm_intensity=0.5, save_hm=False)    # Generate heatmap for image
+    apply_gradcam(setup_dict, 0, 'concatenate_2', hm_intensity=0.5, save_hm=True)    # Generate heatmap for image
 

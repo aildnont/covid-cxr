@@ -25,7 +25,6 @@ def setup_lime():
     lime_dict['NUM_SAMPLES'] = cfg['LIME']['NUM_SAMPLES']
     lime_dict['NUM_FEATURES'] = cfg['LIME']['NUM_FEATURES']
     lime_dict['IMG_PATH'] = cfg['PATHS']['IMAGES']
-    lime_dict['TEST_IMG_PATH'] = cfg['PATHS']['TEST_IMGS']
     lime_dict['IMG_DIM'] = cfg['DATA']['IMG_DIM']
     lime_dict['PRED_THRESHOLD'] = cfg['PREDICTION']['THRESHOLD']
     lime_dict['CLASSES'] = cfg['DATA']['CLASSES']
@@ -41,7 +40,7 @@ def setup_lime():
     # Create ImageDataGenerator for test set
     test_img_gen = ImageDataGenerator(preprocessing_function=remove_text,
                                        samplewise_std_normalization=True, samplewise_center=True)
-    test_generator = test_img_gen.flow_from_dataframe(dataframe=lime_dict['TEST_SET'], directory=cfg['PATHS']['TEST_IMGS'],
+    test_generator = test_img_gen.flow_from_dataframe(dataframe=lime_dict['TEST_SET'], directory=None,
         x_col="filename", y_col='label_str', target_size=tuple(cfg['DATA']['IMG_DIM']), batch_size=1,
         class_mode='categorical', shuffle=False)
     lime_dict['TEST_GENERATOR'] = test_generator
@@ -73,7 +72,7 @@ def explain_xray(lime_dict, idx, save_exp=True):
     x = np.squeeze(x, axis=0)
 
     # Get the corresponding original image (no preprocessing)
-    orig_img = cv2.imread(lime_dict['TEST_IMG_PATH'] + lime_dict['TEST_SET']['filename'][idx])
+    orig_img = cv2.imread(lime_dict['TEST_SET']['filename'][idx])
     new_dim = tuple(lime_dict['IMG_DIM'])
     orig_img = cv2.resize(orig_img, new_dim, interpolation=cv2.INTER_NEAREST)     # Resize image
 
@@ -101,7 +100,7 @@ def explain_xray(lime_dict, idx, save_exp=True):
     else:
         label_to_see = 'top'
     _ = visualize_explanation(orig_img, explanation, img_filename, label, probs, lime_dict['CLASSES'], label_to_see=label_to_see,
-                          file_path=file_path)
+                          dir_path=file_path)
     return
 
 
