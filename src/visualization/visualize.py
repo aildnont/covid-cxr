@@ -160,7 +160,7 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, cla
     fig.text(0.02, 0.82, "Predicted Class: " + str(pred_class) + ' (' + class_names[pred_class] + ')', fontsize=10)
     if label is not None:
         fig.text(0.02, 0.84, "Ground Truth Class: " + str(label) + ' (' + class_names[label] + ')', fontsize=10)
-    fig.suptitle("LIME Explanation for image " + img_filename, fontsize=15)
+    fig.suptitle("LIME Explanation for image " + img_filename, fontsize=13)
     fig.tight_layout()
 
     # Save the image
@@ -168,11 +168,11 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, cla
     if dir_path is not None:
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-        filename = dir_path + img_filename + '_exp_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png'
+        filename = dir_path + img_filename.split('/')[-1] + '_exp_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png'
         plt.savefig(filename)
     return filename
 
-def visualize_heatmap(orig_img, heatmap, img_filename, label, probs, class_names, file_path=None):
+def visualize_heatmap(orig_img, heatmap, img_filename, label, probs, class_names, dir_path=None):
     '''
     Obtain a comparison of an original image and heatmap produced by Grad-CAM.
     :param orig_img: Original X-Ray image
@@ -181,7 +181,7 @@ def visualize_heatmap(orig_img, heatmap, img_filename, label, probs, class_names
     :param label: Ground truth class of the example
     :param probs: Prediction probabilities
     :param class_names: Ordered list of class names
-    :param file_path: Path to save the generated image
+    :param dir_path: Path to save the generated image
     :return: Path to saved image
     '''
 
@@ -196,12 +196,12 @@ def visualize_heatmap(orig_img, heatmap, img_filename, label, probs, class_names
     fig.text(0.02, 0.82, "Predicted Class: " + str(pred_class) + ' (' + class_names[pred_class] + ')', fontsize=10)
     if label is not None:
         fig.text(0.02, 0.84, "Ground Truth Class: " + str(label) + ' (' + class_names[label] + ')', fontsize=10)
-    fig.suptitle("Grad-CAM heatmap for image " + img_filename, fontsize=15)
+    fig.suptitle("Grad-CAM heatmap for image " + img_filename, fontsize=13)
     fig.tight_layout()
 
     # Save the image
     filename = None
-    if file_path is not None:
-        filename = file_path + img_filename + '_gradcam_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png'
+    if dir_path is not None:
+        filename = dir_path + img_filename.split('/')[-1] + '_gradcam_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.png'
         plt.savefig(filename)
     return filename
