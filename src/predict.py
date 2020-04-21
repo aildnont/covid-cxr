@@ -144,7 +144,7 @@ def predict_and_explain_set(raw_img_dir=None, preds_dir=None, save_results=True,
 
             # Generate visual for explanation
             exp_filename = visualize_explanation(orig_img, explanation, filename, None, p, CLASS_NAMES,
-                                                 label_to_see=label_to_see, file_path=preds_dir)
+                                                 label_to_see=label_to_see, dir_path=preds_dir)
             row.append(exp_filename.split('\\')[-1])
         rows.append(row)
 
