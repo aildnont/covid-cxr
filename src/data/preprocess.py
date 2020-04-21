@@ -9,6 +9,10 @@ import cv2
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
+import sys
+sys.path.append("/home/COVID-NET/covid-cxr/") # Add root dir to path variable
+print(sys.path)
+os.chdir("/home/COVID-NET/covid-cxr/") # Set pwd to root dir
 
 def build_dataset(cfg):
     '''
