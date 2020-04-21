@@ -144,7 +144,8 @@ be made to [config.yml](config.yml):
   prediction. If you wish to generate LIME explanations for the COVID-19
   class only, set _COVID_ONLY_ within _LIME_ to _'true'_.
 
-## LIME Explanations
+## Explanations
+### LIME Explanations
 Since the predictions made by this model may be used be healthcare
 providers to benefit patients, it is imperative that the model's
 predictions may be explained so as to ensure that the it is making
@@ -172,8 +173,7 @@ See the steps below to apply LIME to explain the model's predictions on
 examples in the test set.
 1. Having previously run _[preprocess.py](src/data/preprocess.py)_ and
    _[train.py](src/train.py)_, ensure that _data/processed/_ contains
-   _Test_Set.csv_ and a folder called _test_ that contains the test set
-   images.
+   _Test_Set.csv_.
 2. In [config.yml](config.yml), set _MODEL_TO_LOAD_ within _PATHS_ to
    the path of the model weights file (_.h5_ file) that you wish to use
    for prediction.
@@ -191,7 +191,7 @@ examples in the test set.
    superpixels that contributed against a prediction of COVID-19 are
    coloured red. The image will be automatically saved in
    _documents/generated_images/_, and its filename will resemble the
-   following: _Client_client_id_exp_yyyymmdd-hhmmss.png_. See below for
+   following: _original-filename_exp_yyyymmdd-hhmmss.png_. See below for
    examples of this graphic.
 
 It is our hope that healthcare professionals will be able to provide
@@ -216,6 +216,25 @@ explanation #2")
 explanation #3")  
 ![alt text](documents/readme_images/LIME_example3.PNG "Sample LIME
 explanation #4")
+
+### Grad-CAM Explanations
+We are in the midst of exploring Grad-CAM as an additional means of explanations. 
+Grad-CAM enables one to visualize the gradient of the label in the final 
+convolutional layer to visualize important regions of the image. The 
+implementation of Grad-CAM here is a prototype and is currently experimental. 
+Nonetheless, steps to use it are as follows:
+1. Follow steps 1 and 2 in [LIME Explanations](#lime-explanations).
+2. Execute _[gradcam.py](src/interpretability/gradcam.py)_. To
+   generate explanations for different images in the test set, modify
+   the following call: 
+   `apply_gradcam(lime_dict, i, layer_name, hm_intensity=0.5, save_exp=True)`. 
+   Set _i_ to the index of the test set image you would like to explain and
+   rerun the script. _layer_name_ is the name of the final convolutional
+   layer in your model (see output of _model.summary()_ to find this).
+3. Interpret the output of Grad-CAM. Redder pixels correspond to higher values
+   of the gradient at the final convolutional layer. An image of your heatmap
+   will be saved in _documents/generated_images/_, and its filename will 
+   resemble the following: _original-filename_gradcamp_yyyymmdd-hhmmss.png_.
 
 ## Train multiple models and save the best one
 Not every model trained will perform at the same level on the test set.
@@ -347,6 +366,7 @@ empty files that enable Python to recognize certain directories as
 packages.
 
 ```
+├── azure                         <- folder containing Azure ML pipelines
 ├── data
 │   ├── interpretability          <- Interpretability files
 │   └── processed                 <- Products of preprocessing
@@ -364,6 +384,7 @@ packages.
 │   ├── data                      <- Data processing
 |   |   └── preprocess.py         <- Main preprocessing script
 │   ├── interpretability          <- Model interpretability scripts
+|   |   ├── gradcam.py            <- Script for generating Grad-CAM explanations
 |   |   └── lime_explain.py       <- Script for generating LIME explanations
 │   ├── models                    <- TensorFlow model definitions
 |   |   └── models.py             <- Script containing model definition
