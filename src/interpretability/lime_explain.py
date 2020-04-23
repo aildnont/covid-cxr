@@ -106,5 +106,5 @@ def explain_xray(lime_dict, idx, save_exp=True):
 
 if __name__ == '__main__':
     lime_dict = setup_lime()
-    i = 70                                                       # Select i'th image in test set
+    i = 0                                                       # Select i'th image in test set
     explain_xray(lime_dict, i, save_exp=True)                   # Generate explanation for image

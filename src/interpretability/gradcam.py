@@ -101,5 +101,5 @@ def apply_gradcam(setup_dict, idx, hm_intensity=0.5, save_hm=True):
 
 if __name__ == '__main__':
     setup_dict = setup_gradcam()
-    heatmap = apply_gradcam(setup_dict, 10, hm_intensity=0.5, save_hm=False)    # Generate heatmap for image
+    heatmap = apply_gradcam(setup_dict, 10, hm_intensity=0.5, save_hm=True)    # Generate heatmap for image
 

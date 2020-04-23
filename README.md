@@ -48,29 +48,37 @@ global effort of identifying and treating cases of COVID-19. This model is a pro
    ```
    $ pip install -r requirements.txt
    ```
-3. Clone the
+3. Create a new folder to contain all of your raw data. Set the _RAW_DATA_
+   field in the _PATHS_ section of [config.yml](config.yml) to the
+   address of this new folder.
+4. Clone the
    [covid-chestxray-dataset](https://github.com/ieee8023/covid-chestxray-dataset)
-   repository somewhere on your local machine. Set the _RAW_COVID_DATA_
+   repository inside of your _RAW_DATA_ folder. Set the _MILA_DATA_
    field in the _PATHS_ section of [config.yml](config.yml) to the
    address of the root directory of the cloned repository (for help see
    [Project Config](#project-config)).
-4. Download and unzip the
+5. Clone the
+   [Figure1-COVID-chestxray-dataset](https://github.com/agchung/Figure1-COVID-chestxray-dataset)
+   repository inside of your _RAW_DATA_ folder. Set the _FIGURE1_DATA_
+   field in the _PATHS_ section of [config.yml](config.yml) to the
+   address of the root directory of the cloned repository.
+6. Download and unzip the
    [RSNA Pneumonia Detection Challenge](https://www.kaggle.com/c/rsna-pneumonia-detection-challenge)
    dataset from Kaggle somewhere on your local machine. Set the
-   _RAW_OTHER_DATA_ field in the _PATHS_ section of
+   _RSNA_DATA_ field in the _PATHS_ section of
    [config.yml](config.yml) to the address of the folder containing the
    dataset.
-5. Execute [_preprocess.py_](src/data/preprocess.py) to create Pandas
+7. Execute [_preprocess.py_](src/data/preprocess.py) to create Pandas
    DataFrames of filenames and labels. Preprocessed DataFrames and
    corresponding images of the dataset will be saved within
    _data/preprocessed/_.
-6. Execute [_train.py_](src/train.py) to train the neural network model.
+8. Execute [_train.py_](src/train.py) to train the neural network model.
    The trained model weights will be saved within _results/models/_, and
    its filename will resemble the following structure:
    modelyyyymmdd-hhmmss.h5, where yyyymmdd-hhmmss is the current time.
    The [TensorBoard](https://www.tensorflow.org/tensorboard) log files
    will be saved within _results/logs/training/_.
-7. In [config.yml](config.yml), set _MODEL_TO_LOAD_ within _PATHS_ to
+9. In [config.yml](config.yml), set _MODEL_TO_LOAD_ within _PATHS_ to
    the path of the model weights file that was generated in step 6 (for
    help see [Project Config](#project-config)). Execute
    [_lime_explain.py_](src/interpretability/lime_explain.py) to generate
@@ -136,7 +144,8 @@ be made to [config.yml](config.yml):
   prediction. If you wish to generate LIME explanations for the COVID-19
   class only, set _COVID_ONLY_ within _LIME_ to _'true'_.
 
-## LIME Explanations
+## Explanations
+### LIME Explanations
 Since the predictions made by this model may be used be healthcare
 providers to benefit patients, it is imperative that the model's
 predictions may be explained so as to ensure that the it is making
@@ -164,8 +173,7 @@ See the steps below to apply LIME to explain the model's predictions on
 examples in the test set.
 1. Having previously run _[preprocess.py](src/data/preprocess.py)_ and
    _[train.py](src/train.py)_, ensure that _data/processed/_ contains
-   _Test_Set.csv_ and a folder called _test_ that contains the test set
-   images.
+   _Test_Set.csv_.
 2. In [config.yml](config.yml), set _MODEL_TO_LOAD_ within _PATHS_ to
    the path of the model weights file (_.h5_ file) that you wish to use
    for prediction.
@@ -183,7 +191,7 @@ examples in the test set.
    superpixels that contributed against a prediction of COVID-19 are
    coloured red. The image will be automatically saved in
    _documents/generated_images/_, and its filename will resemble the
-   following: _Client_client_id_exp_yyyymmdd-hhmmss.png_. See below for
+   following: _original-filename_exp_yyyymmdd-hhmmss.png_. See below for
    examples of this graphic.
 
 It is our hope that healthcare professionals will be able to provide
@@ -208,6 +216,25 @@ explanation #2")
 explanation #3")  
 ![alt text](documents/readme_images/LIME_example3.PNG "Sample LIME
 explanation #4")
+
+### Grad-CAM Explanations
+We are in the midst of exploring Grad-CAM as an additional means of explanations. 
+Grad-CAM enables one to visualize the gradient of the label in the final 
+convolutional layer to visualize important regions of the image. The 
+implementation of Grad-CAM here is a prototype and is currently experimental. 
+Nonetheless, steps to use it are as follows:
+1. Follow steps 1 and 2 in [LIME Explanations](#lime-explanations).
+2. Execute _[gradcam.py](src/interpretability/gradcam.py)_. To
+   generate explanations for different images in the test set, modify
+   the following call: 
+   `apply_gradcam(lime_dict, i, layer_name, hm_intensity=0.5, save_exp=True)`. 
+   Set _i_ to the index of the test set image you would like to explain and
+   rerun the script. _layer_name_ is the name of the final convolutional
+   layer in your model (see output of _model.summary()_ to find this).
+3. Interpret the output of Grad-CAM. Redder pixels correspond to higher values
+   of the gradient at the final convolutional layer. An image of your heatmap
+   will be saved in _documents/generated_images/_, and its filename will 
+   resemble the following: _original-filename_gradcamp_yyyymmdd-hhmmss.png_.
 
 ## Train multiple models and save the best one
 Not every model trained will perform at the same level on the test set.
@@ -339,8 +366,9 @@ empty files that enable Python to recognize certain directories as
 packages.
 
 ```
+├── azure                         <- folder containing Azure ML pipelines
 ├── data
-│   ├── interpretability          <- Generated feature information
+│   ├── interpretability          <- Interpretability files
 │   └── processed                 <- Products of preprocessing
 |
 ├── documents
@@ -356,6 +384,7 @@ packages.
 │   ├── data                      <- Data processing
 |   |   └── preprocess.py         <- Main preprocessing script
 │   ├── interpretability          <- Model interpretability scripts
+|   |   ├── gradcam.py            <- Script for generating Grad-CAM explanations
 |   |   └── lime_explain.py       <- Script for generating LIME explanations
 │   ├── models                    <- TensorFlow model definitions
 |   |   └── models.py             <- Script containing model definition
@@ -385,6 +414,7 @@ goals. A summary of the major configurable elements in this file is
 below.
 
 #### PATHS
+- **RAW_DATA**: Path to parent folder containing all downloaded datasets (i.e. _MILA_DATA_, _FIGURE1_DATA_, _RSNA_DATA_)
 - **MILA_DATA**: Path to folder containing
   [Mila COVID-19 image dataset](https://github.com/ieee8023/covid-chestxray-dataset)
 - **FIGURE1_DATA**: Path to folder containing
@@ -505,3 +535,7 @@ The Corporation of the City of London
 201 Queens Ave. Suite 300, London, ON. N6A 1J1  
 C: 226.448.9113 | maross@london.ca
 
+**Blake VanBerlo**  
+Data Scientist  
+City of London Research and Innovation Lab  
+C: vanberloblake@gmail.com  

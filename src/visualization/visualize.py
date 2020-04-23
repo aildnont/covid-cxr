@@ -160,7 +160,7 @@ def visualize_explanation(orig_img, explanation, img_filename, label, probs, cla
     fig.text(0.02, 0.82, "Predicted Class: " + str(pred_class) + ' (' + class_names[pred_class] + ')', fontsize=10)
     if label is not None:
         fig.text(0.02, 0.84, "Ground Truth Class: " + str(label) + ' (' + class_names[label] + ')', fontsize=10)
-    fig.suptitle("LIME Explanation for image " + img_filename, fontsize=15)
+    fig.suptitle("LIME Explanation for image " + img_filename, fontsize=13)
     fig.tight_layout()
 
     # Save the image
@@ -196,7 +196,7 @@ def visualize_heatmap(orig_img, heatmap, img_filename, label, probs, class_names
     fig.text(0.02, 0.82, "Predicted Class: " + str(pred_class) + ' (' + class_names[pred_class] + ')', fontsize=10)
     if label is not None:
         fig.text(0.02, 0.84, "Ground Truth Class: " + str(label) + ' (' + class_names[label] + ')', fontsize=10)
-    fig.suptitle("Grad-CAM heatmap for image " + img_filename, fontsize=15)
+    fig.suptitle("Grad-CAM heatmap for image " + img_filename, fontsize=13)
     fig.tight_layout()
 
     # Save the image
