@@ -70,10 +70,10 @@ def dcnn_resnet(model_config, input_shape, metrics, n_classes=2, output_bias=Non
 
     # Set model loss function, optimizer, metrics.
     model = Model(inputs=X_input, outputs=Y)
+    model.summary()
     if gpus >= 2:
         model = multi_gpu_model(model, gpus=gpus)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=metrics)
-    model.summary()
     return model
 
 
@@ -104,8 +104,9 @@ def resnet50v2(model_config, input_shape, metrics, n_classes=2, output_bias=None
     print("MODEL CONFIG: ", model_config)
 
     # Start with pretrained ResNet50V2
-    pretrained_resnet = ResNet50V2(include_top=False, weights='imagenet', input_shape=input_shape)
-    X = pretrained_resnet.output
+    X_input = Input(input_shape, name='input_img')
+    base_model = ResNet50V2(include_top=False, weights='imagenet', input_shape=input_shape, input_tensor=X_input)
+    X = base_model.output
 
     # Add custom top
     X = GlobalAveragePooling2D()(X)
@@ -116,17 +117,18 @@ def resnet50v2(model_config, input_shape, metrics, n_classes=2, output_bias=None
     Y = Activation('softmax', dtype='float32', name='output')(X)
 
     # Set model loss function, optimizer, metrics.
-    model = Model(inputs=pretrained_resnet.input, outputs=Y)
+    model = Model(inputs=X_input, outputs=Y)
+    model.summary()
     if gpus >= 2:
         model = multi_gpu_model(model, gpus=gpus)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=metrics)
-    model.summary()
     return model
 
 
 def resnet101v2(model_config, input_shape, metrics, n_classes=2, output_bias=None, gpus=1):
     '''
     Defines a model based on a pretrained ResNet101V2 for multiclass X-ray classification.
+    Note that batch size per GPU should be >= 12 to prevent NaN in batch normalization.
     :param model_config: A dictionary of parameters associated with the model architecture
     :param input_shape: The shape of the model input
     :param metrics: Metrics to track model's performance
@@ -150,9 +152,10 @@ def resnet101v2(model_config, input_shape, metrics, n_classes=2, output_bias=Non
         output_bias = Constant(output_bias)
     print("MODEL CONFIG: ", model_config)
 
-    # Start with pretrained ResNet50V2
-    pretrained_resnet = ResNet101V2(include_top=False, weights='imagenet', input_shape=input_shape)
-    X = pretrained_resnet.output
+    # Start with pretrained ResNet101V2
+    X_input = Input(input_shape, name='input_img')
+    base_model = ResNet101V2(include_top=False, weights='imagenet', input_shape=input_shape, input_tensor=X_input)
+    X = base_model.output
 
     # Add custom top
     X = GlobalAveragePooling2D()(X)
@@ -163,9 +166,9 @@ def resnet101v2(model_config, input_shape, metrics, n_classes=2, output_bias=Non
     Y = Activation('softmax', dtype='float32', name='output')(X)
 
     # Set model loss function, optimizer, metrics.
-    model = Model(inputs=pretrained_resnet.input, outputs=Y)
+    model = Model(inputs=X_input, outputs=Y)
+    model.summary()
     if gpus >= 2:
         model = multi_gpu_model(model, gpus=gpus)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=metrics)
-    model.summary()
     return model

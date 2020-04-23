@@ -1,4 +1,5 @@
 PATHS:
+  RAW_DATA: 'D:/Documents/Work/covid-cxr/data/'                                       # Path containing all 3 raw datasets (Mila, Figure 1, RSNA)
   MILA_DATA: 'D:/Documents/Work/covid-cxr/data/covid-chestxray-dataset/'              # Path of Mila dataset https://github.com/ieee8023/covid-chestxray-dataset
   FIGURE1_DATA: 'D:/Documents/Work/covid-cxr/data/Figure1-COVID-chestxray-dataset/'   # Path of Figure 1 dataset https://github.com/agchung/Figure1-COVID-chestxray-dataset
   RSNA_DATA: 'D:/Documents/Work/covid-cxr/data/rsna/'                                 # Path of RSNA dataset https://www.kaggle.com/c/rsna-pneumonia-detection-challenge
@@ -26,18 +27,18 @@ DATA:
 
 TRAIN:
   CLASS_MODE: 'binary'                                    # One of {'binary', 'multiclass'}
-  MODEL_DEF: 'resnet50v2'                                 # One of {'dcnn_resent', 'resnet50v2'}
+  MODEL_DEF: 'dcnn_resnet'                                # One of {'dcnn_resnet', 'resnet50v2', 'resnet101v2'}
   CLASS_MULTIPLIER: [0.15, 1.0]                           # Class multiplier for binary classification
   #CLASS_MULTIPLIER: [0.4, 1.0, 0.4]                      # Class multiplier for multiclass classification (3 classes)
   EXPERIMENT_TYPE: 'single_train'                         # One of {'single_train', 'multi_train', 'hparam_search'}
   BATCH_SIZE: 32
-  EPOCHS: 200
+  EPOCHS: 10
   THRESHOLDS: 0.5                                         # Can be changed to list of values in range [0, 1]
   PATIENCE: 7
   IMB_STRATEGY: 'class_weight'                            # One of {'class_weight', 'random_oversample'}
   METRIC_PREFERENCE: ['auc', 'recall', 'precision', 'loss']
   NUM_RUNS: 10
-  NUM_GPUS: 2
+  NUM_GPUS: 1
 
 NN:
   DCNN_BINARY:
@@ -48,9 +49,9 @@ NN:
     MAXPOOL_SIZE: (2,2)
     CONV_BLOCKS: 3
     NODES_DENSE0: 128
-    LR: 0.0003
+    LR: 0.00001
     OPTIMIZER: 'adam'
-    DROPOUT: 0.40
+    DROPOUT: 0.4
     L2_LAMBDA: 0.0001
   DCNN_MULTICLASS:
     KERNEL_SIZE: (3,3)
@@ -68,27 +69,27 @@ NN:
 LIME:
   KERNEL_WIDTH: 1.75
   FEATURE_SELECTION: 'lasso_path'
-  NUM_FEATURES: 10000
-  NUM_SAMPLES: 4000
+  NUM_FEATURES: 1000
+  NUM_SAMPLES: 1000
   COVID_ONLY: false
 
 HP_SEARCH:
   METRICS: ['accuracy', 'loss', 'recall', 'precision', 'auc']
   COMBINATIONS: 50
-  REPEATS: 3
+  REPEATS: 2
   RANGES:
     KERNEL_SIZE: ['(3,3)', '(5,5)']     # Discrete range
     MAXPOOL_SIZE: ['(2,2)', '(3,3)']    # Discrete range
     INIT_FILTERS: [8, 16, 32]           # Discrete range
     FILTER_EXP_BASE: [2, 3]             # Int range
-    NODES_DENSE0: [128, 256]            # Discrete range
-    CONV_BLOCKS: [2, 4]                 # Int range
-    DROPOUT: [0.2, 0.4]                 # Real range
-    LR: [-4.0, -3.0]                    # Real range on log scale (10^x)
-    OPTIMIZER: ['adam', 'sgd']          # Discrete range
-    L2_LAMBDA: [-5.0, -4.0]             # Real range on log scale (10^x)
-    BATCH_SIZE: [8, 16]                 # Discrete range
-    IMB_STRATEGY: ['class_weight', 'random_oversample']  # Discrete range
+    NODES_DENSE0: [128, 256, 512, 1024] # Discrete range
+    CONV_BLOCKS: [3, 8]                 # Int range
+    DROPOUT: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]                 # Discrete range
+    LR: [-5.0, -3.0]                    # Real range on log scale (10^x)
+    OPTIMIZER: ['adam']                 # Discrete range
+    L2_LAMBDA: [0.0, 0.00001, 0.0001, 0.001]    # Discrete range
+    BATCH_SIZE: [16, 32]                # Discrete range
+    IMB_STRATEGY: ['class_weight']      # Discrete range
 
 PREDICTION:
   THRESHOLD: 0.5

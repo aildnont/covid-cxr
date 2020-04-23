@@ -81,13 +81,15 @@ def train_model(cfg, data, callbacks, verbose=1):
     img_shape = tuple(cfg['DATA']['IMG_DIM'])
     y_col = 'label_str'
     class_mode = 'categorical'
-    train_generator = train_img_gen.flow_from_dataframe(dataframe=data['TRAIN'], directory=None,
-        x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode)
-    val_generator = val_img_gen.flow_from_dataframe(dataframe=data['VAL'], directory=None,
-        x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode)
-    test_generator = test_img_gen.flow_from_dataframe(dataframe=data['TEST'], directory=None,
-        x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'], class_mode=class_mode,
-        shuffle=False)
+    train_generator = train_img_gen.flow_from_dataframe(dataframe=data['TRAIN'], directory=cfg['PATHS']['RAW_DATA'],
+        x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'],
+        class_mode=class_mode, validate_filenames=False)
+    val_generator = val_img_gen.flow_from_dataframe(dataframe=data['VAL'], directory=cfg['PATHS']['RAW_DATA'],
+        x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'],
+        class_mode=class_mode, validate_filenames=False)
+    test_generator = test_img_gen.flow_from_dataframe(dataframe=data['TEST'], directory=cfg['PATHS']['RAW_DATA'],
+        x_col="filename", y_col=y_col, target_size=img_shape, batch_size=cfg['TRAIN']['BATCH_SIZE'],
+        class_mode=class_mode, validate_filenames=False, shuffle=False)
 
     # Save model's ordering of class indices
     dill.dump(test_generator.class_indices, open(cfg['PATHS']['OUTPUT_CLASS_INDICES'], 'wb'))
@@ -114,7 +116,7 @@ def train_model(cfg, data, callbacks, verbose=1):
            for i in range(len(histogram))])
     input_shape = cfg['DATA']['IMG_DIM'] + [3]
     num_gpus = cfg['TRAIN']['NUM_GPUS']
-    if cfg['TRAIN']['MODEL_DEF'] == 'dcnn_resent':
+    if cfg['TRAIN']['MODEL_DEF'] == 'dcnn_resnet':
         model_def = dcnn_resnet
     elif cfg['TRAIN']['MODEL_DEF'] == 'resnet50v2':
         model_def = resnet50v2
@@ -219,10 +221,10 @@ def random_hparam_search(cfg, data, callbacks, log_dir):
     HPARAMS.append(hp.HParam('FILTER_EXP_BASE', hp.IntInterval(hp_ranges['FILTER_EXP_BASE'][0], hp_ranges['FILTER_EXP_BASE'][1])))
     HPARAMS.append(hp.HParam('NODES_DENSE0', hp.Discrete(hp_ranges['NODES_DENSE0'])))
     HPARAMS.append(hp.HParam('CONV_BLOCKS', hp.IntInterval(hp_ranges['CONV_BLOCKS'][0], hp_ranges['CONV_BLOCKS'][1])))
-    HPARAMS.append(hp.HParam('DROPOUT', hp.RealInterval(hp_ranges['DROPOUT'][0], hp_ranges['DROPOUT'][1])))
+    HPARAMS.append(hp.HParam('DROPOUT', hp.Discrete(hp_ranges['DROPOUT'])))
     HPARAMS.append(hp.HParam('LR', hp.RealInterval(hp_ranges['LR'][0], hp_ranges['LR'][1])))
     HPARAMS.append(hp.HParam('OPTIMIZER', hp.Discrete(hp_ranges['OPTIMIZER'])))
-    HPARAMS.append(hp.HParam('L2_LAMBDA', hp.RealInterval(hp_ranges['L2_LAMBDA'][0], hp_ranges['L2_LAMBDA'][1])))
+    HPARAMS.append(hp.HParam('L2_LAMBDA', hp.Discrete(hp_ranges['L2_LAMBDA'])))
     HPARAMS.append(hp.HParam('BATCH_SIZE', hp.Discrete(hp_ranges['BATCH_SIZE'])))
     HPARAMS.append(hp.HParam('IMB_STRATEGY', hp.Discrete(hp_ranges['IMB_STRATEGY'])))
 

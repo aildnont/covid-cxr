@@ -25,6 +25,7 @@ def setup_lime():
     lime_dict['NUM_SAMPLES'] = cfg['LIME']['NUM_SAMPLES']
     lime_dict['NUM_FEATURES'] = cfg['LIME']['NUM_FEATURES']
     lime_dict['IMG_PATH'] = cfg['PATHS']['IMAGES']
+    lime_dict['RAW_DATA_PATH'] = cfg['PATHS']['RAW_DATA']
     lime_dict['IMG_DIM'] = cfg['DATA']['IMG_DIM']
     lime_dict['PRED_THRESHOLD'] = cfg['PREDICTION']['THRESHOLD']
     lime_dict['CLASSES'] = cfg['DATA']['CLASSES']
@@ -40,9 +41,9 @@ def setup_lime():
     # Create ImageDataGenerator for test set
     test_img_gen = ImageDataGenerator(preprocessing_function=remove_text,
                                        samplewise_std_normalization=True, samplewise_center=True)
-    test_generator = test_img_gen.flow_from_dataframe(dataframe=lime_dict['TEST_SET'], directory=None,
+    test_generator = test_img_gen.flow_from_dataframe(dataframe=lime_dict['TEST_SET'], directory=cfg['PATHS']['RAW_DATA'],
         x_col="filename", y_col='label_str', target_size=tuple(cfg['DATA']['IMG_DIM']), batch_size=1,
-        class_mode='categorical', shuffle=False)
+        class_mode='categorical', validate_filenames=False, shuffle=False)
     lime_dict['TEST_GENERATOR'] = test_generator
 
     # Define the LIME explainer
@@ -53,7 +54,6 @@ def setup_lime():
     # Load trained model's weights
     lime_dict['MODEL'] = load_model(cfg['PATHS']['MODEL_TO_LOAD'], compile=False)
 
-    test_predictions = lime_dict['MODEL'].predict_generator(test_generator, verbose=0)
     return lime_dict
 
 
@@ -72,7 +72,7 @@ def explain_xray(lime_dict, idx, save_exp=True):
     x = np.squeeze(x, axis=0)
 
     # Get the corresponding original image (no preprocessing)
-    orig_img = cv2.imread(lime_dict['TEST_SET']['filename'][idx])
+    orig_img = cv2.imread(lime_dict['RAW_DATA_PATH'] + lime_dict['TEST_SET']['filename'][idx])
     new_dim = tuple(lime_dict['IMG_DIM'])
     orig_img = cv2.resize(orig_img, new_dim, interpolation=cv2.INTER_NEAREST)     # Resize image
 

@@ -11,6 +11,7 @@ from src.train import train_model
 from src.visualization.visualize import plot_roc, plot_confusion_matrix
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--rawdatadir', type=str, help="root directory for all datasets")
 parser.add_argument('--preprocesseddir', type=str, help="preprocessed data directory")
 parser.add_argument('--traininglogsdir', type=str, help="training logs directory")
 parser.add_argument('--modelsdir', type=str, help="models directory")
@@ -21,6 +22,7 @@ print(tf.config.experimental.list_physical_devices('GPU'))
 
 # Update paths of input data in config to represent paths on blob.
 cfg = yaml.full_load(open(os.getcwd() + "./config.yml", 'r'))  # Load config data
+cfg['PATHS']['RAW_DATA'] = args.rawdatadir
 cfg['PATHS']['PROCESSED_DATA'] = args.preprocesseddir
 cfg['PATHS']['TRAIN_SET'] = cfg['PATHS']['PROCESSED_DATA'] + '/' + cfg['PATHS']['TRAIN_SET'].split('/')[-1]
 cfg['PATHS']['VAL_SET'] = cfg['PATHS']['PROCESSED_DATA'] + '/' + cfg['PATHS']['VAL_SET'].split('/')[-1]
@@ -61,7 +63,7 @@ print("TRAINING TIME = " + str((datetime.datetime.now() - start_time).total_seco
 test_predictions = model.predict_generator(test_generator, verbose=0)
 test_labels = test_generator.labels
 for metric_name in test_metrics:
-    run.log(metric_name, test_metrics[metric_name])
+    run.log('test_' + metric_name, test_metrics[metric_name])
 covid_idx = test_generator.class_indices['COVID-19']
 roc_plt = plot_roc("Test set", test_generator.labels, test_predictions, class_id=covid_idx)
 run.log_image("ROC", plot=roc_plt)

@@ -24,7 +24,7 @@ def build_dataset(cfg):
 
     # Assemble filenames comprising Mila dataset
     mila_df = pd.read_csv(mila_data_path + 'metadata.csv')
-    mila_df['filename'] = mila_data_path + 'images/' + mila_df['filename'].astype(str)
+    mila_df['filename'] = mila_data_path.split('/')[-2] + '/images/' + mila_df['filename'].astype(str)
     mila_views_cxrs_df = (mila_df['view'].str.contains('|'.join(cfg['DATA']['VIEWS'])))    # Select desired X-ray views
     mila_covid_pts_df = (mila_df['finding'] == 'COVID-19')
     mila_covid_views_df = mila_df[mila_covid_pts_df & mila_views_cxrs_df]  # Images for patients diagnosed with COVID-19
@@ -34,9 +34,9 @@ def build_dataset(cfg):
     fig1_df['filename'] = ''
     for i, row in fig1_df.iterrows():
         if os.path.exists(fig1_data_path + 'images/' + fig1_df.loc[i, 'patientid'] + '.jpg'):
-            fig1_df.loc[i, 'filename'] = fig1_data_path + 'images/' + fig1_df.loc[i, 'patientid'] + '.jpg'
+            fig1_df.loc[i, 'filename'] = fig1_data_path.split('/')[-2] + '/images/' + fig1_df.loc[i, 'patientid'] + '.jpg'
         else:
-            fig1_df.loc[i, 'filename'] = fig1_data_path + 'images/' + fig1_df.loc[i, 'patientid'] + '.png'
+            fig1_df.loc[i, 'filename'] = fig1_data_path.split('/')[-2] + '/images/' + fig1_df.loc[i, 'patientid'] + '.png'
     fig1_df['view'].fillna('PA or AP', inplace=True)    # All images in this dataset are either AP or PA
     fig1_views_cxrs_df = (fig1_df['view'].str.contains('|'.join(cfg['DATA']['VIEWS'])))    # Select desired X-ray views
     fig1_covid_pts_df = (fig1_df['finding'] == 'COVID-19')
@@ -94,7 +94,7 @@ def build_dataset(cfg):
                              fig1_covid_views_df[['filename', 'label']]], axis=0)
 
         rsna_df = pd.concat([rsna_normal_df, rsna_pneum_df], axis=0)
-        rsna_filenames = rsna_data_path + rsna_df['patientId'].astype(str) + '.jpg'
+        rsna_filenames = rsna_data_path.split('/')[-2] + '/' + rsna_df['patientId'].astype(str) + '.jpg'
         rsna_file_df = pd.DataFrame({'filename': rsna_filenames, 'label': 0})
 
         file_df = pd.concat([file_df, rsna_file_df], axis=0)         # Combine both datasets
@@ -110,8 +110,8 @@ def build_dataset(cfg):
                              mila_views_normal_df[['filename', 'label']], fig1_covid_views_df[['filename', 'label']]], axis=0)
 
         # Organize some files from RSNA dataset into "normal", and "pneumonia" XRs
-        rsna_normal_filenames = rsna_data_path + rsna_normal_df['patientId'].astype(str) + '.jpg'
-        rsna_pneum_filenames = rsna_data_path + rsna_pneum_df['patientId'].astype(str) + '.jpg'
+        rsna_normal_filenames = rsna_data_path.split('/')[-2] + '/' + rsna_normal_df['patientId'].astype(str) + '.jpg'
+        rsna_pneum_filenames = rsna_data_path.split('/')[-2] + '/' + rsna_pneum_df['patientId'].astype(str) + '.jpg'
         rsna_normal_file_df = pd.DataFrame({'filename': rsna_normal_filenames, 'label': class_dict['normal']})
         rsna_pneum_file_df = pd.DataFrame({'filename': rsna_pneum_filenames, 'label': class_dict['other_pneumonia']})
         rsna_file_df = pd.concat([rsna_normal_file_df, rsna_pneum_file_df], axis=0)
@@ -139,7 +139,7 @@ def preprocess(cfg=None):
     '''
     Preprocess and partition image data. Assemble all image file paths and partition into training, validation and
     test sets. Copy raw images to folders for training, validation and test sets.
-    :param mode: Type of classification. Set to either 'binary' or 'multiclass'
+    :param cfg: Optional parameter to set your own config object.
     '''
 
     if cfg is None:
@@ -157,6 +157,8 @@ def preprocess(cfg=None):
                                                       stratify=file_df_train['label'])
 
     # Save training, validation and test sets
+    if not os.path.exists(cfg['PATHS']['PROCESSED_DATA']):
+        os.makedirs(cfg['PATHS']['PROCESSED_DATA'])
     file_df_train.to_csv(cfg['PATHS']['TRAIN_SET'])
     file_df_val.to_csv(cfg['PATHS']['VAL_SET'])
     file_df_test.to_csv(cfg['PATHS']['TEST_SET'])
