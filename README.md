@@ -218,23 +218,29 @@ explanation #3")
 explanation #4")
 
 ### Grad-CAM Explanations
-We are in the midst of exploring Grad-CAM as an additional means of explanations. 
-Grad-CAM enables one to visualize the gradient of the label in the final 
-convolutional layer to visualize important regions of the image. The 
-implementation of Grad-CAM here is a prototype and is currently experimental. 
-Nonetheless, steps to use it are as follows:
+We investigated Grad-CAM as an additional method of explainability.
+Grad-CAM enables one to visualize the gradient of the label in the final
+convolutional layer to produce a heatmap depicting regions of the image
+that were highly important during prediction. The steps to use Grad-CAM
+in this repository are as follows:
 1. Follow steps 1 and 2 in [LIME Explanations](#lime-explanations).
-2. Execute _[gradcam.py](src/interpretability/gradcam.py)_. To
-   generate explanations for different images in the test set, modify
-   the following call: 
-   `apply_gradcam(lime_dict, i, layer_name, hm_intensity=0.5, save_exp=True)`. 
-   Set _i_ to the index of the test set image you would like to explain and
-   rerun the script. _layer_name_ is the name of the final convolutional
-   layer in your model (see output of _model.summary()_ to find this).
-3. Interpret the output of Grad-CAM. Redder pixels correspond to higher values
-   of the gradient at the final convolutional layer. An image of your heatmap
-   will be saved in _documents/generated_images/_, and its filename will 
-   resemble the following: _original-filename_gradcamp_yyyymmdd-hhmmss.png_.
+2. Execute _[gradcam.py](src/interpretability/gradcam.py)_. To generate
+   explanations for different images in the test set, modify the
+   following call: `apply_gradcam(lime_dict, i, hm_intensity=0.5,
+   save_exp=True)`. Set _i_ to the index of the test set image you would
+   like to explain and rerun the script.
+3. Interpret the output of Grad-CAM. Bluer pixels and redder pixels
+   correspond to higher and lower values of the gradient at the final
+   convolutional layer respectively. An image of your heatmap will be
+   saved in _documents/generated_images/_, and its filename will
+   resemble the following:
+   _original-filename_gradcamp_yyyymmdd-hhmmss.png_. See below for
+   examples of this graphic.
+
+![alt text](documents/readme_images/Grad-CAM_example0.PNG "Sample
+GradCAM explanation #1")  
+![alt text](documents/readme_images/Grad-CAM_example1.PNG "Sample
+GradCAM explanation #2")
 
 ## Train multiple models and save the best one
 Not every model trained will perform at the same level on the test set.
