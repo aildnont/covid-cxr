@@ -2,7 +2,7 @@ pyyaml==5.2
 matplotlib==3.1.1
 tqdm==4.40.2
 opencv_python==4.1.0.25
-tensorflow_gpu==2.0.1
+tensorflow_gpu==2.0.3
 dill==0.3.0
 scikit_image==0.15.0
 numpy==1.17.4
