@@ -26,6 +26,11 @@ azure/.ipynb_checkpoints
 !results/models/.gitkeep
 !results/experiments/.gitkeep
 !results/predictions/.gitkeep
+logs/
+logstraining
+settings.json
+
+
 
 
 ## PYTHON ##

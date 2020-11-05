@@ -14,6 +14,11 @@ from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ReduceLROnPlateau
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorboard.plugins.hparams import api as hp
+import sys
+sys.path.append("/home/pantelis/projects/ai/computer-vision/covid-cxr") # Add root dir to path variable
+print(sys.path)
+os.chdir("/home/pantelis/projects/ai/computer-vision/covid-cxr") # Set pwd to root dir to import files from src module.
+
 from src.models.models import *
 from src.visualization.visualize import *
 from src.custom.metrics import F1Score
@@ -105,7 +110,7 @@ def train_model(cfg, data, callbacks, verbose=1):
     # Define metrics.
     covid_class_idx = test_generator.class_indices['COVID-19']   # Get index of COVID-19 class
     thresholds = 1.0 / len(cfg['DATA']['CLASSES'])      # Binary classification threshold for a class
-    metrics = ['accuracy', CategoricalAccuracy(name='accuracy'),
+    metrics = [CategoricalAccuracy(name='accuracy'),
                Precision(name='precision', thresholds=thresholds, class_id=covid_class_idx),
                Recall(name='recall', thresholds=thresholds, class_id=covid_class_idx),
                AUC(name='auc'),
@@ -136,12 +141,12 @@ def train_model(cfg, data, callbacks, verbose=1):
     # Train the model.
     steps_per_epoch = ceil(train_generator.n / train_generator.batch_size)
     val_steps = ceil(val_generator.n / val_generator.batch_size)
-    history = model.fit_generator(train_generator, steps_per_epoch=steps_per_epoch, epochs=cfg['TRAIN']['EPOCHS'],
+    history = model.fit(train_generator, steps_per_epoch=steps_per_epoch, epochs=cfg['TRAIN']['EPOCHS'],
                                   validation_data=val_generator, validation_steps=val_steps, callbacks=callbacks,
                                   verbose=verbose, class_weight=class_weight)
 
     # Run the model on the test set and print the resulting performance metrics.
-    test_results = model.evaluate_generator(test_generator, verbose=1)
+    test_results = model.evaluate(test_generator, verbose=1)
     test_metrics = {}
     test_summary_str = [['**Metric**', '**Value**']]
     for metric, value in zip(model.metrics_names, test_results):
@@ -340,9 +345,9 @@ def train_experiment(cfg=None, experiment='single_train', save_weights=True, wri
 
     # Set logs directory
     cur_date = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    log_dir = cfg['PATHS']['LOGS'] + "training\\" + cur_date if write_logs else None
-    if not os.path.exists(cfg['PATHS']['LOGS'] + "training\\"):
-        os.makedirs(cfg['PATHS']['LOGS'] + "training\\")
+    log_dir = cfg['PATHS']['LOGS'] + "training/" + cur_date if write_logs else None
+    if not os.path.exists(cfg['PATHS']['LOGS'] + "training/"):
+        os.makedirs(cfg['PATHS']['LOGS'] + "training/")
 
     # Load dataset file paths and labels
     data = {}
@@ -356,11 +361,11 @@ def train_experiment(cfg=None, experiment='single_train', save_weights=True, wri
 
     # Conduct the desired train experiment
     if experiment == 'hparam_search':
-        log_dir = cfg['PATHS']['LOGS'] + "hparam_search\\" + cur_date
+        log_dir = cfg['PATHS']['LOGS'] + "hparam_search/" + cur_date
         random_hparam_search(cfg, data, callbacks, log_dir)
     else:
         if experiment == 'multi_train':
-            base_log_dir = cfg['PATHS']['LOGS'] + "training\\" if write_logs else None
+            base_log_dir = cfg['PATHS']['LOGS'] + "training/" if write_logs else None
             model, test_metrics, test_generator, cur_date = multi_train(cfg, data, callbacks, base_log_dir)
         else:
             if write_logs:
