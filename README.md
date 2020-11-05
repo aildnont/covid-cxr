@@ -553,5 +553,5 @@ C: 226.448.9113 | maross@london.ca
 
 **Blake VanBerlo**  
 Data Scientist  
-City of London Research and Innovation Lab  
+City of London Research and Development Lab  
 C: vanberloblake@gmail.com  
