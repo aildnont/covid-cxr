@@ -8,6 +8,10 @@ import cv2
 import numpy as np
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'../'))
+
 from src.visualization.visualize import visualize_explanation
 from src.predict import predict_instance, predict_and_explain
 from src.data.preprocess import remove_text

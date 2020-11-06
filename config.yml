@@ -10,7 +10,7 @@ PATHS:
   IMAGES: 'documents/generated_images/'
   LOGS: 'results/logs'
   MODEL_WEIGHTS: 'results/models/'
-  MODEL_TO_LOAD: 'results/models/model.h5'
+  MODEL_TO_LOAD: 'results/models/model_epochs_20.h5' 
   LIME_EXPLAINER: './data/interpretability/lime_explainer.pkl'
   OUTPUT_CLASS_INDICES: './data/interpretability/output_class_indices.pkl'
   BATCH_PRED_IMGS: 'data/processed/test/'
@@ -32,13 +32,13 @@ TRAIN:
   #CLASS_MULTIPLIER: [0.4, 1.0, 0.4]                      # Class multiplier for multiclass classification (3 classes)
   EXPERIMENT_TYPE: 'single_train'                         # One of {'single_train', 'multi_train', 'hparam_search'}
   BATCH_SIZE: 32
-  EPOCHS: 200
+  EPOCHS: 100
   THRESHOLDS: 0.5                                         # Can be changed to list of values in range [0, 1]
   PATIENCE: 7
   IMB_STRATEGY: 'random_oversample' #'class_weight'                            # One of {'class_weight', 'random_oversample'}
   METRIC_PREFERENCE: ['auc', 'recall', 'precision', 'loss']
   NUM_RUNS: 10
-  NUM_GPUS: 2
+  NUM_GPUS: 1
 
 NN:
   DCNN_BINARY:

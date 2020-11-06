@@ -14,10 +14,14 @@ from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ReduceLROnPlateau
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorboard.plugins.hparams import api as hp
-import sys
-sys.path.append("/home/pantelis/projects/ai/computer-vision/covid-cxr") # Add root dir to path variable
+
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),''))
 print(sys.path)
-os.chdir("/home/pantelis/projects/ai/computer-vision/covid-cxr") # Set pwd to root dir to import files from src module.
+# import sys
+# sys.path.append("/home/pantelis/projects/ai/computer-vision/covid-cxr") # Add root dir to path variable
+# print(sys.path)
+# os.chdir("/home/pantelis/projects/ai/computer-vision/covid-cxr") # Set pwd to root dir to import files from src module.
 
 from src.models.models import *
 from src.visualization.visualize import *
@@ -290,7 +294,7 @@ def log_test_results(cfg, model, test_generator, test_metrics, log_dir):
     '''
 
     # Visualization of test results
-    test_predictions = model.predict_generator(test_generator, verbose=0)
+    test_predictions = model.predict(test_generator, verbose=0)
     test_labels = test_generator.labels
     covid_idx = test_generator.class_indices['COVID-19']
     plt = plot_roc("Test set", test_labels, test_predictions, class_id=covid_idx)
