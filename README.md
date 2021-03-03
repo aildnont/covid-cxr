@@ -11,7 +11,7 @@ professionals who can contribute their expertise to this effort. If you
 are interested in getting involved in this project by lending your
 expertise, or sharing data through data-sharing agreements, please reach out to us ([contact info](#contact) is at the bottom
 of this page); otherwise, feel free to experiment with the code base in
-this repo. The initial model was built by Blake VanBerlo of the Artificial Intelligence Research and Innovation Lab at the City of London, Canada.
+this repo. The initial model was built by Blake VanBerlo of the Municipal Artificial Intelligence Applications Lab at the City of London, Canada.
 
 A model has been trained on a dataset composed of X-rays
 labeled positive for COVID-19 infection, normal X-rays, and X-rays
@@ -553,5 +553,5 @@ C: 226.448.9113 | maross@london.ca
 
 **Blake VanBerlo**  
 Data Scientist  
-City of London Research and Development Lab  
+City of London Municipal Artificial Intelligence Applications Lab  
 C: vanberloblake@gmail.com  
