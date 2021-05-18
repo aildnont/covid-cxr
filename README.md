@@ -553,4 +553,4 @@ The Corporation of the City of London
 **Blake VanBerlo**  
 Data Scientist  
 City of London Municipal Artificial Intelligence Applications Lab  
-C: vanberloblake@gmail.com  
+C: blake@vanberloconsulting.com
