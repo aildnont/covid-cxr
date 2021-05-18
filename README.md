@@ -549,7 +549,6 @@ Information Technology Services
 City Manager’s Office 
 The Corporation of the City of London  
 201 Queens Ave. Suite 300, London, ON. N6A 1J1  
-C: 226.448.9113 | maross@london.ca
 
 **Blake VanBerlo**  
 Data Scientist  
