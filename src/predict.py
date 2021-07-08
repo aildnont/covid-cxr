@@ -9,6 +9,11 @@ from datetime import datetime
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from lime.wrappers.scikit_image import SegmentationAlgorithm
+
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),''))
+print(sys.path)
+
 from src.data.preprocess import remove_text
 from src.visualization.visualize import visualize_explanation
 
@@ -52,7 +57,7 @@ def predict_and_explain(x, model, exp, num_features, num_samples):
     segmentation_fn = SegmentationAlgorithm('quickshift', kernel_size=2.25, max_dist=50, ratio=0.1, sigma=0.15)
 
     # Generate explanation for the example
-    explanation = exp.explain_instance(x, predict, num_features=num_features, num_samples=num_samples, segmentation_fn=segmentation_fn)
+    explanation = exp.explain_instance(x.astype(np.double), predict, num_features=num_features, num_samples=num_samples, segmentation_fn=segmentation_fn)
     probs = predict_instance(np.expand_dims(x, axis=0), model)
     return explanation, probs
 

@@ -1,16 +1,16 @@
 PATHS:
-  RAW_DATA: 'D:/Documents/Work/covid-cxr/data/'                                       # Path containing all 3 raw datasets (Mila, Figure 1, RSNA)
-  MILA_DATA: 'D:/Documents/Work/covid-cxr/data/covid-chestxray-dataset/'              # Path of Mila dataset https://github.com/ieee8023/covid-chestxray-dataset
-  FIGURE1_DATA: 'D:/Documents/Work/covid-cxr/data/Figure1-COVID-chestxray-dataset/'   # Path of Figure 1 dataset https://github.com/agchung/Figure1-COVID-chestxray-dataset
-  RSNA_DATA: 'D:/Documents/Work/covid-cxr/data/rsna/'                                 # Path of RSNA dataset https://www.kaggle.com/c/rsna-pneumonia-detection-challenge
+  RAW_DATA: '/data1/nfs_share/data/cv/covid-cxr/data/'                                       # Path containing all 3 raw datasets (Mila, Figure 1, RSNA)
+  MILA_DATA: '/data1/nfs_share/data/cv/covid-cxr/data/covid-chestxray-dataset/'              # Path of Mila dataset https://github.com/ieee8023/covid-chestxray-dataset
+  FIGURE1_DATA: '/data1/nfs_share/data/cv/covid-cxr/data/Figure1-COVID-chestxray-dataset/'   # Path of Figure 1 dataset https://github.com/agchung/Figure1-COVID-chestxray-dataset
+  RSNA_DATA: '/data1/nfs_share/data/cv/covid-cxr/data/rsna/'                                 # Path of RSNA dataset https://www.kaggle.com/c/rsna-pneumonia-detection-challenge
   PROCESSED_DATA: 'data/processed/'
   TRAIN_SET: 'data/processed/train_set.csv'
   VAL_SET: 'data/processed/val_set.csv'
   TEST_SET: 'data/processed/test_set.csv'
   IMAGES: 'documents/generated_images/'
-  LOGS: 'results\\logs\\'
+  LOGS: 'results/logs'
   MODEL_WEIGHTS: 'results/models/'
-  MODEL_TO_LOAD: 'results/models/model.h5'
+  MODEL_TO_LOAD: 'results/models/model_epochs_20.h5' 
   LIME_EXPLAINER: './data/interpretability/lime_explainer.pkl'
   OUTPUT_CLASS_INDICES: './data/interpretability/output_class_indices.pkl'
   BATCH_PRED_IMGS: 'data/processed/test/'
@@ -32,10 +32,10 @@ TRAIN:
   #CLASS_MULTIPLIER: [0.4, 1.0, 0.4]                      # Class multiplier for multiclass classification (3 classes)
   EXPERIMENT_TYPE: 'single_train'                         # One of {'single_train', 'multi_train', 'hparam_search'}
   BATCH_SIZE: 32
-  EPOCHS: 200
+  EPOCHS: 100
   THRESHOLDS: 0.5                                         # Can be changed to list of values in range [0, 1]
   PATIENCE: 7
-  IMB_STRATEGY: 'class_weight'                            # One of {'class_weight', 'random_oversample'}
+  IMB_STRATEGY: 'random_oversample' #'class_weight'                            # One of {'class_weight', 'random_oversample'}
   METRIC_PREFERENCE: ['auc', 'recall', 'precision', 'loss']
   NUM_RUNS: 10
   NUM_GPUS: 1
