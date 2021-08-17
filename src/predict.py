@@ -9,8 +9,36 @@ from datetime import datetime
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from lime.wrappers.scikit_image import SegmentationAlgorithm
+
+
+import sys
+sys.path.append("/home/COVID-NET/covid-cxr/") # Add to Path variable the root directory, to successfully import the models from src folder
+print(sys.path)
+os.chdir("/home/COVID-NET/covid-cxr/") # Set pwd to the root directory, to successfully import the config.yml files in Linux
+
+
+
 from src.data.preprocess import remove_text
 from src.visualization.visualize import visualize_explanation
+
+
+#------------------------------------------------------------------------------#
+# To train model on Tensorflow-GPU. Without this code, the model trains on Tensorflow-CPU
+import tensorflow as tf
+from tensorflow.compat.v1 import InteractiveSession
+config = tf.compat.v1.ConfigProto()
+# Working for OOM errors, allocates that much fraction of total memory to each worker: 
+config.gpu_options.per_process_gpu_memory_fraction = 0.50
+
+# Possible hack for more than 2 workers, not yet tried:
+#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=1 / num_workers)
+#sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+
+#Gives OOM Errors:
+#config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
+
+#------------------------------------------------------------------------------#
 
 
 def predict_instance(x, model):
@@ -96,8 +124,8 @@ def predict_and_explain_set(raw_img_dir=None, preds_dir=None, save_results=True,
 
     # If no path is specified, create new directory for predictions
     if preds_dir is None:
-        preds_dir = cfg['PATHS']['BATCH_PREDS'] + '\\' + cur_date + '\\'
-        if save_results and not os.path.exists(cfg['PATHS']['BATCH_PREDS'] + '\\' + cur_date):
+        preds_dir = cfg['PATHS']['BATCH_PREDS'] + '/' + cur_date + '/'
+        if save_results and not os.path.exists(cfg['PATHS']['BATCH_PREDS'] + '/' + cur_date):
             os.mkdir(preds_dir)
 
     # Create DataFrame for raw image file names
@@ -143,9 +171,11 @@ def predict_and_explain_set(raw_img_dir=None, preds_dir=None, save_results=True,
             orig_img = cv2.resize(orig_img, tuple(cfg['DATA']['IMG_DIM']), interpolation=cv2.INTER_NEAREST)
 
             # Generate visual for explanation
+            #exp_filename = visualize_explanation(orig_img, explanation, filename, None, p, CLASS_NAMES,
+            #                                     label_to_see=label_to_see, file_path=preds_dir)
             exp_filename = visualize_explanation(orig_img, explanation, filename, None, p, CLASS_NAMES,
-                                                 label_to_see=label_to_see, file_path=preds_dir)
-            row.append(exp_filename.split('\\')[-1])
+                                                 label_to_see=label_to_see, dir_path=preds_dir)
+            row.append(exp_filename.split('/')[-1])
         rows.append(row)
 
     # Convert results to a Pandas DataFrame and save

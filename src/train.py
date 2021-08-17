@@ -9,15 +9,46 @@ import matplotlib.pyplot as plt
 import tensorflow.summary as tf_summary
 from imblearn.over_sampling import RandomOverSampler
 from math import ceil
+
+
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
+
 from tensorflow.keras.metrics import BinaryAccuracy, CategoricalAccuracy, Precision, Recall, AUC
 from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ReduceLROnPlateau
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorboard.plugins.hparams import api as hp
+
+import sys
+sys.path.append("/home/COVID-NET/covid-cxr/") # Add root dir to path variable
+print(sys.path)
+os.chdir("/home/COVID-NET/covid-cxr/") # Set pwd to root dir to import files from src module.
+
 from src.models.models import *
 from src.visualization.visualize import *
 from src.custom.metrics import F1Score
 from src.data.preprocess import remove_text
+
+##---------------------------------------------------------------------------##
+# Code for using tensorflow-GPU to train the model
+import tensorflow as tf
+from tensorflow.compat.v1 import InteractiveSession
+config = tf.compat.v1.ConfigProto()
+# Working for OOM errors, allocates that much fraction of total memory to each worker: 
+config.gpu_options.per_process_gpu_memory_fraction = 0.50
+
+# Possible hack for more than 2 workers, not yet tried:
+#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=1 / num_workers)
+#sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+
+#Gives OOM Errors:
+#config.gpu_options.allow_growth = True
+
+session = InteractiveSession(config=config)
+import gc # To avoid OOM
+##---------------------------------------------------------------------------##
+
 
 def get_class_weights(histogram, class_multiplier=None):
     '''
@@ -196,6 +227,14 @@ def multi_train(cfg, data, callbacks, base_log_dir):
                 continue
             else:
                 break
+        
+        # This will discard the graph underlying model A ONLY.
+        tf.keras.backend.clear_session()
+
+        del new_model
+
+        # Note that using gc.collect() enforces garbage collection at wanted points.
+        gc.collect()
 
     print("Best model test metrics: ", best_metrics)
     return best_model, best_metrics, best_generator, best_model_date
@@ -340,9 +379,9 @@ def train_experiment(cfg=None, experiment='single_train', save_weights=True, wri
 
     # Set logs directory
     cur_date = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    log_dir = cfg['PATHS']['LOGS'] + "training\\" + cur_date if write_logs else None
-    if not os.path.exists(cfg['PATHS']['LOGS'] + "training\\"):
-        os.makedirs(cfg['PATHS']['LOGS'] + "training\\")
+    log_dir = cfg['PATHS']['LOGS'] + "training/" + cur_date if write_logs else None
+    if not os.path.exists(cfg['PATHS']['LOGS'] + "training/"):
+        os.makedirs(cfg['PATHS']['LOGS'] + "training/")
 
     # Load dataset file paths and labels
     data = {}
@@ -356,11 +395,11 @@ def train_experiment(cfg=None, experiment='single_train', save_weights=True, wri
 
     # Conduct the desired train experiment
     if experiment == 'hparam_search':
-        log_dir = cfg['PATHS']['LOGS'] + "hparam_search\\" + cur_date
+        log_dir = cfg['PATHS']['LOGS'] + "hparam_search/" + cur_date
         random_hparam_search(cfg, data, callbacks, log_dir)
     else:
         if experiment == 'multi_train':
-            base_log_dir = cfg['PATHS']['LOGS'] + "training\\" if write_logs else None
+            base_log_dir = cfg['PATHS']['LOGS'] + "training/" if write_logs else None
             model, test_metrics, test_generator, cur_date = multi_train(cfg, data, callbacks, base_log_dir)
         else:
             if write_logs:

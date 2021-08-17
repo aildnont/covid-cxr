@@ -8,9 +8,35 @@ import cv2
 import numpy as np
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+
+import sys
+sys.path.append("/home/COVID-NET/covid-cxr/") # Add root dir to path variable
+print(sys.path)
+os.chdir("/home/COVID-NET/covid-cxr/") # Set pwd to root dir to import files from src module.
+
+
 from src.visualization.visualize import visualize_explanation
 from src.predict import predict_instance, predict_and_explain
 from src.data.preprocess import remove_text
+
+##---------------------------------------------------------------------------##
+# Code for using tensorflow-GPU to train the model
+import tensorflow as tf
+from tensorflow.compat.v1 import InteractiveSession
+config = tf.compat.v1.ConfigProto()
+# Working for OOM errors, allocates that much fraction of total memory to each worker: 
+config.gpu_options.per_process_gpu_memory_fraction = 0.50
+
+# Possible hack for more than 2 workers, not yet tried:
+#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=1 / num_workers)
+#sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+
+#Gives OOM Errors:
+#config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
+##---------------------------------------------------------------------------##
+
 
 
 def setup_lime():
