@@ -86,10 +86,10 @@ def build_dataset(cfg):
     label_dict = {i: cfg['DATA']['CLASSES'][i] for i in range(n_classes)}  # Map class name to number
 
     if mode == 'binary':
-        mila_covid_views_df['label'] = 1                                       # Mila images with COVID-19 diagnosis
+        mila_covid_views_df = mila_covid_views_df.assign(label= 1)                                     # Mila images with COVID-19 diagnosis
         mila_other_views_df = mila_df[~mila_covid_pts_df & mila_views_cxrs_df]
-        mila_other_views_df['label'] = 0                                       # Mila images with alternative diagnoses
-        fig1_covid_views_df['label'] = 1                                       # Figure 1 images with COVID-19 diagnosis
+        mila_other_views_df = mila_other_views_df.assign(label= 0)                                     # Mila images with alternative diagnoses
+        fig1_covid_views_df = fig1_covid_views_df.assign(label= 1)                                     # Figure 1 images with COVID-19 diagnosis
         file_df = pd.concat([mila_covid_views_df[['filename', 'label']], mila_other_views_df[['filename', 'label']],
                              fig1_covid_views_df[['filename', 'label']]], axis=0)
 
